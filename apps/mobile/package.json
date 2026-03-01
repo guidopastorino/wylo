@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@wylo/shared": "*",
-    "expo": "~50.0.0",
+    "expo": "~55.0.4",
     "react": "18.2.0",
     "react-native": "0.73.0"
   },
