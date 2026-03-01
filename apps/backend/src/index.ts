@@ -1,8 +1,11 @@
 import express from 'express';
 import type { ApiResponse, User } from '@wylo/shared';
-
+import { auth } from './lib/auth';
+import { toNodeHandler } from 'better-auth/node';
 const app = express();
-const port = process.env.PORT ?? 3001;
+const port = process.env.PORT ?? 5000;
+
+app.all('/api/auth/{*any}', toNodeHandler(auth));
 
 app.use(express.json());
 
