@@ -1,6 +1,6 @@
 # Wylo
 
-Monorepo for **Wylo**: web app (Next.js), API (Express), and mobile (Expo). Shared TypeScript types live in `@wylo/shared`.
+Monorepo for **Wylo**: web app (Next.js) and API (Express). Shared TypeScript types live in `@wylo/shared`.
 
 ## Structure
 
@@ -8,8 +8,7 @@ Monorepo for **Wylo**: web app (Next.js), API (Express), and mobile (Expo). Shar
 wylo/
 ├── apps/
 │   ├── web/        # Next.js
-│   ├── backend/    # Express
-│   └── mobile/     # Expo
+│   └── backend/    # Express
 └── packages/
     └── shared/     # Shared types (@wylo/shared)
 ```
@@ -28,7 +27,6 @@ npm install
 | --------- | ------------------ |
 | `npm run web`     | Start Next.js dev server   |
 | `npm run backend` | Start Express API          |
-| `npm run mobile`  | Start Expo                 |
 | `npm run lint`    | Lint (web)                 |
 | `npm run ci`      | Lint + build backend + web |
 

@@ -9,7 +9,6 @@
     "build:shared": "npm run build -w packages/shared",
     "web": "npm run dev -w apps/web",
     "backend": "npm run dev -w apps/backend",
-    "mobile": "npm run start -w apps/mobile",
     "dev:all": "npm run dev -w apps/backend & npm run dev -w apps/web",
     "postinstall": "npm run build:shared",
     "lint": "npm run lint -w apps/web",
