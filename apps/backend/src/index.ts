@@ -17,12 +17,19 @@ app.use("/api/auth", toNodeHandler(auth));
 
 app.use(express.json());
 
-app.get('/api/user', (_req, res) => {
-  const response: ApiResponse<User> = {
-    data: { id: '1', email: 'user@example.com', name: 'User' },
-    status: 200,
-  };
-  res.json(response);
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    message: "Wylo API is running",
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.listen(port, () => {
