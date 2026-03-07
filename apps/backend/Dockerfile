@@ -1,17 +1,17 @@
 FROM node:20-slim AS base
 WORKDIR /app
 
-# ── 1. Instalar dependencias (todo el monorepo) ──────────────────────────────
+# ── 1. Instalar dependencias SIN correr postinstall ──────────────────────────
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
-RUN npm ci
+RUN npm ci --ignore-scripts
 
-# ── 2. Build shared ──────────────────────────────────────────────────────────
+# ── 2. Copiar fuentes y buildear shared ──────────────────────────────────────
 FROM deps AS build-shared
-COPY packages ./packages
+COPY packages/shared ./packages/shared
 RUN npm run build:shared
 
 # ── 3. Build backend ─────────────────────────────────────────────────────────
@@ -20,12 +20,11 @@ COPY apps/backend ./apps/backend
 WORKDIR /app/apps/backend
 RUN npm run build
 
-# ── 4. Runner (solo lo necesario) ────────────────────────────────────────────
+# ── 4. Runner ────────────────────────────────────────────────────────────────
 FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Estructura de workspace completa para que Node resuelva módulos correctamente
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/shared ./packages/shared
