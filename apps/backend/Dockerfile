@@ -1,36 +1,54 @@
+# ---------- base ----------
 FROM node:20-slim AS base
 WORKDIR /app
 
-# ── 1. Instalar dependencias SIN correr postinstall ──────────────────────────
+
+# ---------- deps ----------
 FROM base AS deps
+
+# manifests
 COPY package.json package-lock.json ./
+
+# workspace manifests
 COPY apps/backend/package.json ./apps/backend/package.json
-COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
-RUN npm ci --ignore-scripts
 
-# ── 2. Copiar fuentes y buildear shared ──────────────────────────────────────
-FROM deps AS build-shared
-COPY packages/shared ./packages/shared
-RUN npm run build:shared
+# instalar deps
+RUN npm ci
 
-# ── 3. Build backend ─────────────────────────────────────────────────────────
-FROM build-shared AS build
-COPY apps/backend ./apps/backend
+
+# ---------- build ----------
+FROM deps AS build
+
+# source
+COPY apps ./apps
+COPY packages ./packages
+
+# build shared
+RUN npm run build -w packages/shared
+
+# build backend
 WORKDIR /app/apps/backend
 RUN npm run build
 
-# ── 4. Runner ────────────────────────────────────────────────────────────────
+
+# ---------- runner ----------
 FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
+# deps hoisted
+COPY --from=deps /app/node_modules ./node_modules
+
+# shared build
 COPY --from=build /app/packages/shared ./packages/shared
-COPY --from=build /app/apps/backend/package.json ./apps/backend/package.json
+
+# backend build
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist
+COPY apps/backend/package.json ./apps/backend/package.json
 
 WORKDIR /app/apps/backend
+
 EXPOSE 5000
+
 CMD ["node", "dist/index.js"]
