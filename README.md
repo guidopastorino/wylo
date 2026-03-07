@@ -1,6 +1,6 @@
 # Wylo
 
-Monorepo for **Wylo**: web app (Next.js) and API (Express). Shared TypeScript types live in `@wylo/shared`.
+Monorepo for **Wylo**: web app (Next.js), API (Express), and mobile app (Expo). Shared TypeScript types live in `@wylo/shared`.
 
 ## Structure
 
@@ -8,7 +8,8 @@ Monorepo for **Wylo**: web app (Next.js) and API (Express). Shared TypeScript ty
 wylo/
 ├── apps/
 │   ├── web/        # Next.js
-│   └── backend/    # Express
+│   ├── backend/    # Express
+│   └── mobile/     # Expo (React Native)
 └── packages/
     └── shared/     # Shared types (@wylo/shared)
 ```
@@ -23,24 +24,25 @@ npm install
 
 ## Commands
 
-| Command   | Description        |
-| --------- | ------------------ |
-| `npm run web`     | Start Next.js dev server   |
-| `npm run backend` | Start Express API          |
-| `npm run lint`    | Lint (web)                 |
-| `npm run docker:up` | Start Postgres only (local DB) |
+| Command            | Description                    |
+| ------------------ | ------------------------------ |
+| `npm run web`      | Start Next.js dev server       |
+| `npm run backend`  | Start Express API              |
+| `npm run mobile`   | Start Expo app (tunnel mode)   |
+| `npm run lint`     | Lint (web)                     |
+| `npm run docker:up`| Start Postgres only (local DB)  |
 
 ## Docker
 
-Solo Postgres para desarrollo local. Backend y web se corren en la máquina con `npm run backend` y `npm run web`.
+Postgres only for local development. Backend and web run on the host with `npm run backend` and `npm run web`.
 
-- **Levantar la DB:** `npm run docker:up` o `docker compose up -d`
-- **Bajar contenedores:** `docker compose down`
-- **Bajar y borrar volumen de DB:** `docker compose down -v`
+- **Start the DB:** `npm run docker:up` or `docker compose up -d`
+- **Stop containers:** `docker compose down`
+- **Stop and remove DB volume:** `docker compose down -v`
 
-Con la DB levantada, usa `DATABASE_URL=postgres://wylo:wylo@localhost:5432/wylo` en el backend.
+With the DB running, use `DATABASE_URL=postgres://wylo:wylo@localhost:5432/wylo` in the backend.
 
-Para desplegar el backend (p. ej. Render), construir la imagen: `docker build -f apps/backend/Dockerfile -t wylo-backend .`
+To deploy the backend (e.g. Render), build the image: `docker build -f apps/backend/Dockerfile -t wylo-backend .`
 
 ## Shared types
 

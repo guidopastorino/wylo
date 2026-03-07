@@ -8,6 +8,7 @@
   "scripts": {
     "build:shared": "npm run build -w packages/shared",
     "web": "npm run dev -w apps/web",
+    "mobile": "npm run start:tunnel -w apps/mobile",
     "backend": "npm run dev -w apps/backend",
     "dev:all": "npm run dev -w apps/backend & npm run dev -w apps/web",
     "postinstall": "npm run build:shared",
