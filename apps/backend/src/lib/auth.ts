@@ -15,4 +15,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  cookieOptions: {
+    sameSite: 'none',
+    secure: true,
+  },
 });
