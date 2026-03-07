@@ -1,0 +1,27 @@
+.git
+.gitignore
+node_modules
+npm-debug.log*
+*.log
+
+# Env files
+.env
+.env.*
+apps/**/.env*
+
+# Build artifacts
+apps/web/.next
+apps/web/out
+apps/**/node_modules
+packages/**/dist
+packages/**/node_modules
+
+# IDE/editor
+.vscode
+.idea
+*.swp
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+

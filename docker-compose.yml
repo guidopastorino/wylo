@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: wylo
+      POSTGRES_PASSWORD: wylo
+      POSTGRES_DB: wylo
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://wylo:wylo@db:5432/wylo
+      BETTER_AUTH_SECRET: changeme
+      BETTER_AUTH_URL: http://backend:5000
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "5000:5000"
+
+volumes:
+  db-data:
+
