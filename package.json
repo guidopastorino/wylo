@@ -12,7 +12,9 @@
     "dev:all": "npm run dev -w apps/backend & npm run dev -w apps/web",
     "postinstall": "npm run build:shared",
     "lint": "npm run lint -w apps/web",
-    "ci": "npm run lint && npm run build -w apps/backend && npm run build -w apps/web"
+    "docker:up": "docker compose up -d db",
+    "docker:reset": "docker compose down -v",
+    "docker:down": "docker compose down"
   },
   "engines": {
     "node": ">=18"
