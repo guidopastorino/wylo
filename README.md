@@ -32,11 +32,15 @@ npm install
 
 ## Docker
 
-- **Solo Postgres (desarrollo local):** `npm run docker:up` — levanta solo la base. Backend y web se corren con `npm run backend` y `npm run web` (usa `DATABASE_URL=postgres://wylo:wylo@localhost:5432/wylo`).
-- **Stack completo (Postgres + backend en contenedores):** `docker compose up --build`
+Solo Postgres para desarrollo local. Backend y web se corren en la máquina con `npm run backend` y `npm run web`.
+
+- **Levantar la DB:** `npm run docker:up` o `docker compose up -d`
 - **Bajar contenedores:** `docker compose down`
 - **Bajar y borrar volumen de DB:** `docker compose down -v`
-- **Build de la imagen del backend (para desplegar en Lightsail, etc.):** `docker build -f apps/backend/Dockerfile -t wylo-backend .`
+
+Con la DB levantada, usa `DATABASE_URL=postgres://wylo:wylo@localhost:5432/wylo` en el backend.
+
+Para desplegar el backend (p. ej. Render), construir la imagen: `docker build -f apps/backend/Dockerfile -t wylo-backend .`
 
 ## Shared types
 
