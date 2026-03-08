@@ -13,7 +13,7 @@
   "dependencies": {
     "@better-auth/expo": "^1.5.4",
     "better-auth": "^1.5.4",
-    "expo": "~54.0.33",
+    "expo": "~55.0.5",
     "expo-constants": "~18.0.5",
     "expo-linking": "~8.0.4",
     "expo-network": "~8.0.3",
