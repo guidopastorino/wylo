@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signOut, useSession } from "@/lib/auth-client";
@@ -61,11 +60,9 @@ export default function Home() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 {session.user?.image ? (
-                  <Image
+                  <img
                     src={session.user.image}
                     alt={session.user.name ?? session.user.email ?? "Avatar"}
-                    width={48}
-                    height={48}
                     className="h-12 w-12 rounded-full border border-zinc-200 object-cover dark:border-zinc-700"
                     referrerPolicy="no-referrer"
                   />
