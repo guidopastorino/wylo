@@ -35,7 +35,9 @@ export default function Home() {
             Estado de sesión
           </h2>
           {isPending && (
-            <p className="text-zinc-600 dark:text-zinc-300">Cargando sesión...</p>
+            <p className="text-zinc-600 dark:text-zinc-300">
+              Cargando sesión...
+            </p>
           )}
           {error && !isPending && (
             <p className="text-sm text-red-500">
@@ -111,4 +113,3 @@ export default function Home() {
     </div>
   );
 }
-
