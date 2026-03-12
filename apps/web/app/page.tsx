@@ -56,13 +56,34 @@ export default function Home() {
           )}
           {session && (
             <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-zinc-700 dark:text-zinc-200">
-                <p className="font-medium">
-                  {session.user?.name ?? "Usuario sin nombre"}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {session.user?.email}
-                </p>
+              <div className="flex items-center gap-3">
+                {session.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name ?? session.user.email ?? "Avatar"}
+                    className="h-12 w-12 rounded-full border border-zinc-200 object-cover dark:border-zinc-700"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 text-xs font-semibold uppercase text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    {(session.user?.name ?? session.user?.email ?? "U")
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((part) => part[0])
+                      .join("")}
+                  </div>
+                )}
+                <div className="text-sm text-zinc-700 dark:text-zinc-200">
+                  <p className="flex items-center gap-2 font-medium">
+                    {session.user?.name ?? "Usuario sin nombre"}
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      Sesión activa
+                    </span>
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {session.user?.email}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
