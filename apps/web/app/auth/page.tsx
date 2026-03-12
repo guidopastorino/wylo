@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Github, Slack } from "lucide-react";
+import { Github, Slack, Triangle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 type Tab = "signin" | "signup";
@@ -190,6 +190,29 @@ export default function AuthPage() {
               >
                 <Slack className="h-4 w-4" />
                 <span>Continuar con Slack</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  setError(null);
+                  setLoading(true);
+                  const { error: err } = await authClient.signIn.social({
+                    provider: "vercel",
+                    callbackURL: "/",
+                  });
+                  setLoading(false);
+                  if (err) {
+                    setError(
+                      err.message ?? "Error al iniciar sesión con Vercel",
+                    );
+                  }
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                <Triangle className="h-4 w-4" fill="currentColor" />
+                <span>Continuar con Vercel</span>
               </button>
             </div>
           </>
