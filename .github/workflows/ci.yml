@@ -27,9 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint (web)
-        run: npm run lint -w apps/web
-        continue-on-error: true
+      - name: Lint
+        run: npm run lint
 
       - name: Typecheck backend
         run: npm run build -w apps/backend

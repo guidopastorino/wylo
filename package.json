@@ -12,10 +12,15 @@
     "backend": "npm run dev -w apps/backend",
     "dev:all": "npm run dev -w apps/backend & npm run dev -w apps/web",
     "postinstall": "npm run build:shared",
-    "lint": "npm run lint -w apps/web",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
     "docker:up": "docker compose up -d",
     "docker:reset": "docker compose down -v",
     "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.0"
   },
   "engines": {
     "node": ">=18"
