@@ -1,8 +1,7 @@
-import express from "express";
-import cors from "cors";
-import type { ApiResponse, User } from "@wylo/shared";
-import { auth } from "./lib/auth";
 import { toNodeHandler } from "better-auth/node";
+import cors from "cors";
+import express from "express";
+import { auth } from "./lib/auth";
 
 const app = express();
 const port = process.env.PORT ?? 5000;

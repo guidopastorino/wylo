@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { type NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/api/auth", "/auth"];
 
@@ -8,7 +8,7 @@ export default async function proxy(request: NextRequest) {
 
   // Always allow auth API and auth pages (login/signup)
   const isPublic = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(path + "/"),
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   if (isPublic) {
     // Logged-in user on /auth → redirect to home

@@ -1,14 +1,14 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { useSession, signOut } from "@/lib/auth-client";
-import { useRouter } from "expo-router";
+import { signOut, useSession } from "@/lib/auth-client";
 
 export default function HomeScreen() {
   const router = useRouter();

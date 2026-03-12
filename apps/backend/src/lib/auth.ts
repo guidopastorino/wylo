@@ -1,17 +1,18 @@
+import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { expo } from "@better-auth/expo";
 import { db } from "../db/db";
 import * as schema from "../db/schemas/auth-schema";
+import { getEnv, getEnvOptional } from "./env";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 export const auth = betterAuth({
   appName: "Wylo API",
-  secret: process.env.BETTER_AUTH_SECRET!,
-  baseURL: process.env.FRONTEND_URL!,
+  secret: getEnv("BETTER_AUTH_SECRET"),
+  baseURL: getEnv("FRONTEND_URL"),
   trustedOrigins: [
-    process.env.FRONTEND_URL!,
+    getEnv("FRONTEND_URL"),
     "wylo://",
     "wylo://*",
     ...(isProduction
@@ -35,16 +36,16 @@ export const auth = betterAuth({
   },
   socialProviders: {
     vercel: {
-      clientId: process.env.VERCEL_CLIENT_ID!,
-      clientSecret: process.env.VERCEL_CLIENT_SECRET!,
+      clientId: getEnvOptional("VERCEL_CLIENT_ID"),
+      clientSecret: getEnvOptional("VERCEL_CLIENT_SECRET"),
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      clientId: getEnvOptional("GITHUB_CLIENT_ID"),
+      clientSecret: getEnvOptional("GITHUB_CLIENT_SECRET"),
     },
     slack: {
-      clientId: process.env.SLACK_CLIENT_ID!,
-      clientSecret: process.env.SLACK_CLIENT_SECRET!,
+      clientId: getEnvOptional("SLACK_CLIENT_ID"),
+      clientSecret: getEnvOptional("SLACK_CLIENT_SECRET"),
     },
   },
   advanced: {
