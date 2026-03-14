@@ -350,18 +350,6 @@ export default function AuthPage() {
                 placeholder="Al menos 8 caracteres"
               />
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => handleRememberMeChange(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-primary"
-                aria-describedby="remember-signup-description"
-              />
-              <span id="remember-signup-description">
-                Recordar nombre y email en este dispositivo
-              </span>
-            </label>
             <Button type="submit" disabled={loading} className="mt-2">
               {loading ? "Creando cuenta…" : "Crear cuenta"}
             </Button>
