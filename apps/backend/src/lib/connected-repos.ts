@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
+import type { db } from "../db/db";
 import { connectedRepo } from "../db/schemas/connected-repos-schema";
-import { db } from "../db/db";
 
 export async function getConnectedRepos(
   dbInstance: typeof db,
@@ -21,7 +21,9 @@ export async function addConnectedRepo(
   await dbInstance
     .insert(connectedRepo)
     .values({ userId, repoFullName })
-    .onConflictDoNothing({ target: [connectedRepo.userId, connectedRepo.repoFullName] });
+    .onConflictDoNothing({
+      target: [connectedRepo.userId, connectedRepo.repoFullName],
+    });
 }
 
 export async function removeConnectedRepo(

@@ -56,7 +56,10 @@ app.get("/api/github/repos/:owner/:repo", handleGetRepoDetail);
 app.get("/api/github/repos/:owner/:repo/commits", handleGetRepoCommits);
 app.get("/api/github/repos/:owner/:repo/commits/:sha", handleGetCommitDetail);
 app.get("/api/github/repos/:owner/:repo/pulls", handleGetRepoPulls);
-app.get("/api/github/repos/:owner/:repo/pulls/:pull_number", handleGetPullDetail);
+app.get(
+  "/api/github/repos/:owner/:repo/pulls/:pull_number",
+  handleGetPullDetail,
+);
 app.get("/api/github/repos/:owner/:repo/contents", handleGetRepoContents);
 
 app.listen(port, () => {

@@ -1,8 +1,16 @@
 "use client";
 
-import { GitBranch, Loader2, Check, Lock, Plus, Search, Unlock } from "lucide-react";
+import {
+  Check,
+  GitBranch,
+  Loader2,
+  Lock,
+  Plus,
+  Search,
+  Unlock,
+} from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -25,30 +33,40 @@ export default function RepositoriesPage() {
   const [toggling, setToggling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<VisibilityFilter>("all");
 
-  const fetchRepos = () =>
-    fetch("/api/github/repos", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load repos");
-        return res.json();
-      })
-      .then((data: { repos: Repo[] }) => setRepos(data.repos))
-      .catch((e) => setError(e instanceof Error ? e.message : "Error"));
+  const fetchRepos = useCallback(
+    () =>
+      fetch("/api/github/repos", { credentials: "include" })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load repos");
+          return res.json();
+        })
+        .then((data: { repos: Repo[] }) => setRepos(data.repos))
+        .catch((e) => setError(e instanceof Error ? e.message : "Error")),
+    [],
+  );
 
-  const fetchConnected = () =>
-    fetch("/api/github/connected-repos", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) return;
-        return res.json();
-      })
-      .then((data: { connectedRepos?: string[] }) => setConnectedRepos(data?.connectedRepos ?? []))
-      .catch(() => {});
+  const fetchConnected = useCallback(
+    () =>
+      fetch("/api/github/connected-repos", { credentials: "include" })
+        .then((res) => {
+          if (!res.ok) return;
+          return res.json();
+        })
+        .then((data: { connectedRepos?: string[] }) =>
+          setConnectedRepos(data?.connectedRepos ?? []),
+        )
+        .catch(() => {}),
+    [],
+  );
 
   useEffect(() => {
-    Promise.all([fetchRepos(), fetchConnected()])
-      .finally(() => setLoading(false));
-  }, []);
+    Promise.all([fetchRepos(), fetchConnected()]).finally(() =>
+      setLoading(false),
+    );
+  }, [fetchRepos, fetchConnected]);
 
   const filteredRepos = useMemo(() => {
     let list = repos;
@@ -70,10 +88,13 @@ export default function RepositoriesPage() {
     setToggling(repoFullName);
     try {
       if (isConnected) {
-        await fetch(`/api/github/connected-repos?repoFullName=${encodeURIComponent(repoFullName)}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
+        await fetch(
+          `/api/github/connected-repos?repoFullName=${encodeURIComponent(repoFullName)}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          },
+        );
         setConnectedRepos((prev) => prev.filter((r) => r !== repoFullName));
       } else {
         await fetch("/api/github/connected-repos", {
@@ -113,7 +134,8 @@ export default function RepositoriesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Repositories</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Conectá los repos que quieras monitorear. El dashboard mostrará métricas y actividad solo de estos repos.
+          Conectá los repos que quieras monitorear. El dashboard mostrará
+          métricas y actividad solo de estos repos.
         </p>
       </div>
 
@@ -175,20 +197,20 @@ export default function RepositoriesPage() {
           <p className="text-sm font-medium text-muted-foreground">
             {connectedRepos.length} de {repos.length} conectados
             {filteredRepos.length !== repos.length && (
-              <span className="ml-1">
-                · mostrando {filteredRepos.length}
-              </span>
+              <span className="ml-1">· mostrando {filteredRepos.length}</span>
             )}
           </p>
         </div>
         <ul className="divide-y divide-border">
           {repos.length === 0 ? (
             <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No se encontraron repos. Verificá que tu cuenta de GitHub tenga acceso a repos.
+              No se encontraron repos. Verificá que tu cuenta de GitHub tenga
+              acceso a repos.
             </li>
           ) : filteredRepos.length === 0 ? (
             <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Ningún repo coincide con la búsqueda o el filtro. Probá otros términos o mostrá todos.
+              Ningún repo coincide con la búsqueda o el filtro. Probá otros
+              términos o mostrá todos.
             </li>
           ) : (
             filteredRepos.map((repo) => {

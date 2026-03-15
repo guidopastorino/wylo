@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
 
 function useTheme() {
@@ -36,7 +39,12 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
   const isDark = useTheme();
 
   return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-full min-w-0 break-words", className)}>
+    <div
+      className={cn(
+        "prose prose-sm dark:prose-invert max-w-full min-w-0 break-words",
+        className,
+      )}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
@@ -92,9 +100,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           table({ children }) {
             return (
               <div className="overflow-x-auto my-4 rounded-lg border border-border">
-                <table className="min-w-full border-collapse">
-                  {children}
-                </table>
+                <table className="min-w-full border-collapse">{children}</table>
               </div>
             );
           },
@@ -156,10 +162,14 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
             return <h1 className="text-xl font-bold mt-6 mb-3">{children}</h1>;
           },
           h2({ children }) {
-            return <h2 className="text-lg font-semibold mt-5 mb-2">{children}</h2>;
+            return (
+              <h2 className="text-lg font-semibold mt-5 mb-2">{children}</h2>
+            );
           },
           h3({ children }) {
-            return <h3 className="text-base font-semibold mt-4 mb-2">{children}</h3>;
+            return (
+              <h3 className="text-base font-semibold mt-4 mb-2">{children}</h3>
+            );
           },
           hr() {
             return <hr className="my-4 border-border" />;

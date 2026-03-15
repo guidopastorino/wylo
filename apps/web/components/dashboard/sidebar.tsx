@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -51,22 +51,23 @@ export function Sidebar({
   const user = userProp ?? session?.user ?? null;
   const [connectedRepos, setConnectedRepos] = useState<string[]>([]);
 
-  const fetchConnectedRepos = () => {
+  const fetchConnectedRepos = useCallback(() => {
     fetch("/api/github/connected-repos", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { connectedRepos: [] }))
       .then((data: { connectedRepos?: string[] }) =>
         setConnectedRepos(data?.connectedRepos ?? []),
       )
       .catch(() => {});
-  };
+  }, []);
 
   useEffect(() => {
     if (!session?.user?.id) return;
     fetchConnectedRepos();
     const onUpdate = () => fetchConnectedRepos();
     window.addEventListener("connected-repos-changed", onUpdate);
-    return () => window.removeEventListener("connected-repos-changed", onUpdate);
-  }, [session?.user?.id]);
+    return () =>
+      window.removeEventListener("connected-repos-changed", onUpdate);
+  }, [session?.user?.id, fetchConnectedRepos]);
 
   const linkClass = (href: string) =>
     cn(

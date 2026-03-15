@@ -151,15 +151,19 @@ export default function PullDetailPage() {
                 <span
                   className={cn(
                     "rounded px-2 py-0.5 text-xs font-medium",
-                    isOpen && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                    isMerged && "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                    isOpen &&
+                      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                    isMerged &&
+                      "bg-violet-500/10 text-violet-600 dark:text-violet-400",
                     isClosed && "bg-red-500/10 text-red-600 dark:text-red-400",
                   )}
                 >
                   {isOpen ? "Open" : isMerged ? "Merged" : "Closed"}
                 </span>
                 {pull.draft && (
-                  <span className="rounded bg-muted px-2 py-0.5 text-xs">Draft</span>
+                  <span className="rounded bg-muted px-2 py-0.5 text-xs">
+                    Draft
+                  </span>
                 )}
                 <span>#{pull.number}</span>
                 <span>·</span>
@@ -191,9 +195,13 @@ export default function PullDetailPage() {
         {/* Branch info */}
         <div className="flex items-center gap-2 text-sm">
           <GitBranch className="size-4 text-muted-foreground" />
-          <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{pull.head.ref}</code>
+          <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
+            {pull.head.ref}
+          </code>
           <span className="text-muted-foreground">→</span>
-          <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{pull.base.ref}</code>
+          <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
+            {pull.base.ref}
+          </code>
         </div>
 
         {/* Stats */}
@@ -237,7 +245,11 @@ export default function PullDetailPage() {
         ) : (
           <div className="space-y-3">
             {files.map((file, i) => (
-              <FileDiffCard key={file.filename} file={file} defaultExpanded={i < 3} />
+              <FileDiffCard
+                key={file.filename}
+                file={file}
+                defaultExpanded={i < 3}
+              />
             ))}
           </div>
         )}

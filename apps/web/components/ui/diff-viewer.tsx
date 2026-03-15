@@ -3,7 +3,10 @@
 import { ChevronDown, ChevronRight, File, Minus, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
 
 const languageMap: Record<string, string> = {
@@ -45,7 +48,12 @@ interface DiffLine {
   content: string;
   oldLineNum?: number;
   newLineNum?: number;
-  hunkInfo?: { oldStart: number; oldCount: number; newStart: number; newCount: number };
+  hunkInfo?: {
+    oldStart: number;
+    oldCount: number;
+    newStart: number;
+    newCount: number;
+  };
 }
 
 function parsePatch(patch: string): DiffLine[] {
@@ -61,7 +69,9 @@ function parsePatch(patch: string): DiffLine[] {
     }
 
     if (line.startsWith("@@")) {
-      const match = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)?/);
+      const match = line.match(
+        /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)?/,
+      );
       if (match) {
         oldLine = parseInt(match[1], 10);
         newLine = parseInt(match[3], 10);
@@ -145,9 +155,10 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
       <table className="w-full border-collapse font-mono">
         <tbody>
           {lines.map((line, i) => {
+            const lineKey = `diff-${i}-${line.type}-${line.oldLineNum ?? ""}-${line.newLineNum ?? ""}-${(line.content ?? "").slice(0, 40)}`;
             if (line.type === "hunk") {
               return (
-                <tr key={i} className="bg-blue-50 dark:bg-blue-950/50">
+                <tr key={lineKey} className="bg-blue-50 dark:bg-blue-950/50">
                   <td
                     colSpan={4}
                     className="px-3 py-1.5 font-mono text-xs text-blue-600 dark:text-blue-400"
@@ -160,9 +171,10 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
 
             return (
               <tr
-                key={i}
+                key={lineKey}
                 className={cn(
-                  line.type === "addition" && "bg-emerald-50 dark:bg-emerald-950/30",
+                  line.type === "addition" &&
+                    "bg-emerald-50 dark:bg-emerald-950/30",
                   line.type === "deletion" && "bg-red-50 dark:bg-red-950/30",
                   line.type === "context" && "bg-white dark:bg-zinc-900",
                 )}
@@ -171,9 +183,12 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
                 <td
                   className={cn(
                     "w-12 select-none border-r px-2 py-0.5 text-right text-xs",
-                    line.type === "addition" && "border-emerald-200 bg-emerald-100/50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-500",
-                    line.type === "deletion" && "border-red-200 bg-red-100/50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-500",
-                    line.type === "context" && "border-border/50 text-muted-foreground/60",
+                    line.type === "addition" &&
+                      "border-emerald-200 bg-emerald-100/50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-500",
+                    line.type === "deletion" &&
+                      "border-red-200 bg-red-100/50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-500",
+                    line.type === "context" &&
+                      "border-border/50 text-muted-foreground/60",
                   )}
                 >
                   {line.type === "context" || line.type === "deletion"
@@ -184,9 +199,12 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
                 <td
                   className={cn(
                     "w-12 select-none border-r px-2 py-0.5 text-right text-xs",
-                    line.type === "addition" && "border-emerald-200 bg-emerald-100/50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-500",
-                    line.type === "deletion" && "border-red-200 bg-red-100/50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-500",
-                    line.type === "context" && "border-border/50 text-muted-foreground/60",
+                    line.type === "addition" &&
+                      "border-emerald-200 bg-emerald-100/50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-500",
+                    line.type === "deletion" &&
+                      "border-red-200 bg-red-100/50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-500",
+                    line.type === "context" &&
+                      "border-border/50 text-muted-foreground/60",
                   )}
                 >
                   {line.type === "context" || line.type === "addition"
@@ -197,8 +215,10 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
                 <td
                   className={cn(
                     "w-6 select-none px-1 py-0.5 text-center font-semibold",
-                    line.type === "addition" && "text-emerald-600 dark:text-emerald-400",
-                    line.type === "deletion" && "text-red-600 dark:text-red-400",
+                    line.type === "addition" &&
+                      "text-emerald-600 dark:text-emerald-400",
+                    line.type === "deletion" &&
+                      "text-red-600 dark:text-red-400",
                   )}
                 >
                   {line.type === "addition" && "+"}
@@ -220,7 +240,9 @@ export function DiffViewer({ patch, filename }: DiffViewerProps) {
                     }}
                     PreTag="span"
                     wrapLines
-                    lineProps={{ style: { background: "transparent", display: "block" } }}
+                    lineProps={{
+                      style: { background: "transparent", display: "block" },
+                    }}
                   >
                     {line.content || " "}
                   </SyntaxHighlighter>
@@ -250,18 +272,30 @@ interface FileDiffCardProps {
   defaultExpanded?: boolean;
 }
 
-export function FileDiffCard({ file, defaultExpanded = false }: FileDiffCardProps) {
+export function FileDiffCard({
+  file,
+  defaultExpanded = false,
+}: FileDiffCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const statusConfig: Record<string, { label: string; color: string }> = {
-    added: { label: "Añadido", color: "text-emerald-600 dark:text-emerald-400" },
+    added: {
+      label: "Añadido",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
     removed: { label: "Eliminado", color: "text-red-600 dark:text-red-400" },
-    modified: { label: "Modificado", color: "text-amber-600 dark:text-amber-400" },
+    modified: {
+      label: "Modificado",
+      color: "text-amber-600 dark:text-amber-400",
+    },
     renamed: { label: "Renombrado", color: "text-blue-600 dark:text-blue-400" },
     copied: { label: "Copiado", color: "text-purple-600 dark:text-purple-400" },
   };
 
-  const status = statusConfig[file.status] ?? { label: file.status, color: "text-muted-foreground" };
+  const status = statusConfig[file.status] ?? {
+    label: file.status,
+    color: "text-muted-foreground",
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -271,11 +305,22 @@ export function FileDiffCard({ file, defaultExpanded = false }: FileDiffCardProp
         className="flex w-full items-center gap-3 bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
       >
         <span className="text-muted-foreground">
-          {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          {expanded ? (
+            <ChevronDown className="size-4" />
+          ) : (
+            <ChevronRight className="size-4" />
+          )}
         </span>
         <File className="size-4 shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate font-mono text-sm">{file.filename}</span>
-        <span className={cn("shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium", status.color)}>
+        <span className="min-w-0 flex-1 truncate font-mono text-sm">
+          {file.filename}
+        </span>
+        <span
+          className={cn(
+            "shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium",
+            status.color,
+          )}
+        >
           {status.label}
         </span>
         <div className="flex shrink-0 items-center gap-3 text-xs font-medium">

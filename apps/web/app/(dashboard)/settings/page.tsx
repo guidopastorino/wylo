@@ -57,9 +57,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-medium text-muted-foreground">
                   Nombre
                 </p>
-                <p className="text-sm font-medium">
-                  {user.name ?? "—"}
-                </p>
+                <p className="text-sm font-medium">{user.name ?? "—"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -68,9 +66,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-medium text-muted-foreground">
                   Email
                 </p>
-                <p className="text-sm font-medium">
-                  {user.email ?? "—"}
-                </p>
+                <p className="text-sm font-medium">{user.email ?? "—"}</p>
               </div>
             </div>
           </div>

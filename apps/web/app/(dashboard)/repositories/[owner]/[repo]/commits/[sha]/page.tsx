@@ -139,7 +139,9 @@ export default function CommitDetailPage() {
                 )}
                 <span>{commit.authorLogin ?? commit.authorName ?? "—"}</span>
                 <span>·</span>
-                <span>{commit.authorDate ? formatTimeAgo(commit.authorDate) : "—"}</span>
+                <span>
+                  {commit.authorDate ? formatTimeAgo(commit.authorDate) : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -214,7 +216,11 @@ export default function CommitDetailPage() {
         ) : (
           <div className="space-y-3">
             {files.map((file, i) => (
-              <FileDiffCard key={file.filename} file={file} defaultExpanded={i < 3} />
+              <FileDiffCard
+                key={file.filename}
+                file={file}
+                defaultExpanded={i < 3}
+              />
             ))}
           </div>
         )}

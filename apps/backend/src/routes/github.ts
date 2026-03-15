@@ -1,20 +1,19 @@
 import type { Request, Response } from "express";
-import { auth } from "../lib/auth";
 import { db } from "../db/db";
+import { auth } from "../lib/auth";
 import {
   addConnectedRepo,
   getConnectedRepos,
   removeConnectedRepo,
 } from "../lib/connected-repos";
-import {
-  createOctokit,
-  getGitHubAccessToken,
-} from "../lib/github";
+import { createOctokit, getGitHubAccessToken } from "../lib/github";
 
 function requestHeaders(req: Request): Headers {
   const h = new Headers();
   for (const [k, v] of Object.entries(req.headers)) {
-    if (v !== undefined && v !== "") h.set(k, Array.isArray(v) ? v[0]! : v);
+    if (v === undefined || v === "") continue;
+    const val = Array.isArray(v) ? v[0] : v;
+    if (val !== undefined) h.set(k, val);
   }
   return h;
 }
@@ -37,14 +36,23 @@ export async function handleGetRepos(req: Request, res: Response) {
       per_page: 30,
     });
     res.json({
-      repos: data.map((r: { id: number; full_name: string; name: string; private: boolean; description: string | null; updated_at: string | null }) => ({
-        id: r.id,
-        fullName: r.full_name,
-        name: r.name,
-        private: r.private,
-        description: r.description,
-        updatedAt: r.updated_at,
-      })),
+      repos: data.map(
+        (r: {
+          id: number;
+          full_name: string;
+          name: string;
+          private: boolean;
+          description: string | null;
+          updated_at: string | null;
+        }) => ({
+          id: r.id,
+          fullName: r.full_name,
+          name: r.name,
+          private: r.private,
+          description: r.description,
+          updatedAt: r.updated_at,
+        }),
+      ),
     });
   } catch (err) {
     console.error("GitHub repos error:", err);
@@ -72,20 +80,33 @@ export async function handleGetPulls(req: Request, res: Response) {
       sort: "updated",
       per_page: 20,
     });
-    const pulls = data.items.map((pr: { id: number; number: number; title: string; state: string; html_url: string; body?: string | null; user?: { login: string; avatar_url: string } | null; created_at: string; updated_at: string; repository_url: string }) => ({
-      id: pr.id,
-      number: pr.number,
-      title: pr.title,
-      state: pr.state,
-      htmlUrl: pr.html_url,
-      body: pr.body,
-      user: pr.user
-        ? { login: pr.user.login, avatarUrl: pr.user.avatar_url }
-        : null,
-      createdAt: pr.created_at,
-      updatedAt: pr.updated_at,
-      repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
-    }));
+    const pulls = data.items.map(
+      (pr: {
+        id: number;
+        number: number;
+        title: string;
+        state: string;
+        html_url: string;
+        body?: string | null;
+        user?: { login: string; avatar_url: string } | null;
+        created_at: string;
+        updated_at: string;
+        repository_url: string;
+      }) => ({
+        id: pr.id,
+        number: pr.number,
+        title: pr.title,
+        state: pr.state,
+        htmlUrl: pr.html_url,
+        body: pr.body,
+        user: pr.user
+          ? { login: pr.user.login, avatarUrl: pr.user.avatar_url }
+          : null,
+        createdAt: pr.created_at,
+        updatedAt: pr.updated_at,
+        repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
+      }),
+    );
     res.json({ pulls });
   } catch (err) {
     console.error("GitHub pulls error:", err);
@@ -115,7 +136,11 @@ export async function handlePostConnectedRepo(req: Request, res: Response) {
     return;
   }
   const repoFullName = req.body?.repoFullName as string | undefined;
-  if (!repoFullName || typeof repoFullName !== "string" || !repoFullName.includes("/")) {
+  if (
+    !repoFullName ||
+    typeof repoFullName !== "string" ||
+    !repoFullName.includes("/")
+  ) {
     res.status(400).json({ error: "repoFullName required (e.g. owner/repo)" });
     return;
   }
@@ -135,8 +160,14 @@ export async function handleDeleteConnectedRepo(req: Request, res: Response) {
     return;
   }
   const repoFullName = req.query.repoFullName as string | undefined;
-  if (!repoFullName || typeof repoFullName !== "string" || !repoFullName.includes("/")) {
-    res.status(400).json({ error: "repoFullName query required (e.g. owner/repo)" });
+  if (
+    !repoFullName ||
+    typeof repoFullName !== "string" ||
+    !repoFullName.includes("/")
+  ) {
+    res
+      .status(400)
+      .json({ error: "repoFullName query required (e.g. owner/repo)" });
     return;
   }
   try {
@@ -185,41 +216,60 @@ export async function handleGetDashboard(req: Request, res: Response) {
         ? `type:pr is:merged author:${login} ${repoQuery}`
         : `type:pr is:merged author:${login}`;
 
-    const [reposRes, myPullsRes, reviewsPendingRes, mergedRes] = await Promise.all([
-      octokit.rest.repos.listForAuthenticatedUser({
-        sort: "updated",
-        per_page: 100,
-      }),
-      octokit.rest.search.issuesAndPullRequests({
-        q: searchQ,
-        sort: "updated",
-        per_page: 30,
-      }),
-      octokit.rest.search.issuesAndPullRequests({
-        q: reviewsPendingQ,
-        sort: "updated",
-        per_page: 20,
-      }),
-      octokit.rest.search.issuesAndPullRequests({
-        q: mergedQ,
-        sort: "updated",
-        per_page: 30,
-      }),
-    ]);
+    const [reposRes, myPullsRes, reviewsPendingRes, mergedRes] =
+      await Promise.all([
+        octokit.rest.repos.listForAuthenticatedUser({
+          sort: "updated",
+          per_page: 100,
+        }),
+        octokit.rest.search.issuesAndPullRequests({
+          q: searchQ,
+          sort: "updated",
+          per_page: 30,
+        }),
+        octokit.rest.search.issuesAndPullRequests({
+          q: reviewsPendingQ,
+          sort: "updated",
+          per_page: 20,
+        }),
+        octokit.rest.search.issuesAndPullRequests({
+          q: mergedQ,
+          sort: "updated",
+          per_page: 30,
+        }),
+      ]);
 
-    const allRepos = reposRes.data.map((r: { id: number; full_name: string; name: string; private: boolean }) => ({
-      id: r.id,
-      fullName: r.full_name,
-      name: r.name,
-      private: r.private,
-    }));
+    const allRepos = reposRes.data.map(
+      (r: {
+        id: number;
+        full_name: string;
+        name: string;
+        private: boolean;
+      }) => ({
+        id: r.id,
+        fullName: r.full_name,
+        name: r.name,
+        private: r.private,
+      }),
+    );
 
     const repos =
       connectedRepos.length > 0
-        ? allRepos.filter((r: { fullName: string }) => connectedRepos.includes(r.fullName))
+        ? allRepos.filter((r: { fullName: string }) =>
+            connectedRepos.includes(r.fullName),
+          )
         : allRepos.slice(0, 20);
 
-    type PrItem = { id: number; number: number; title: string; state: string; html_url: string; user: { login: string; avatar_url: string } | null; updated_at: string; repository_url: string };
+    type PrItem = {
+      id: number;
+      number: number;
+      title: string;
+      state: string;
+      html_url: string;
+      user: { login: string; avatar_url: string } | null;
+      updated_at: string;
+      repository_url: string;
+    };
     const myPulls = myPullsRes.data.items.map((pr: PrItem) => ({
       id: pr.id,
       number: pr.number,
@@ -233,36 +283,68 @@ export async function handleGetDashboard(req: Request, res: Response) {
       repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
     }));
 
-    const activity = myPulls.slice(0, 10).map((pr: { title: string; repoFullName: string; number: number; user: { login: string; avatarUrl: string } | null; updatedAt: string; htmlUrl: string }) => ({
-      type: "pull_request" as const,
-      title: pr.title,
-      repoFullName: pr.repoFullName,
-      number: pr.number,
-      user: pr.user?.login ?? "unknown",
-      avatarUrl: pr.user?.avatarUrl ?? null,
-      updatedAt: pr.updatedAt,
-      htmlUrl: pr.htmlUrl,
-    }));
+    const activity = myPulls
+      .slice(0, 10)
+      .map(
+        (pr: {
+          title: string;
+          repoFullName: string;
+          number: number;
+          user: { login: string; avatarUrl: string } | null;
+          updatedAt: string;
+          htmlUrl: string;
+        }) => ({
+          type: "pull_request" as const,
+          title: pr.title,
+          repoFullName: pr.repoFullName,
+          number: pr.number,
+          user: pr.user?.login ?? "unknown",
+          avatarUrl: pr.user?.avatarUrl ?? null,
+          updatedAt: pr.updatedAt,
+          htmlUrl: pr.htmlUrl,
+        }),
+      );
 
     type MergedItem = { created_at: string; closed_at: string | null };
     const mergedItems = mergedRes.data.items as MergedItem[];
     const mergeTimes = mergedItems
-      .filter((m) => m.closed_at)
-      .map((m) => (new Date(m.closed_at!).getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60));
-    const avgTimeToMergeHours = mergeTimes.length > 0
-      ? Math.round((mergeTimes.reduce((a, b) => a + b, 0) / mergeTimes.length) * 10) / 10
-      : null;
+      .filter(
+        (m): m is MergedItem & { closed_at: string } => m.closed_at != null,
+      )
+      .map(
+        (m) =>
+          (new Date(m.closed_at).getTime() - new Date(m.created_at).getTime()) /
+          (1000 * 60 * 60),
+      );
+    const avgTimeToMergeHours =
+      mergeTimes.length > 0
+        ? Math.round(
+            (mergeTimes.reduce((a, b) => a + b, 0) / mergeTimes.length) * 10,
+          ) / 10
+        : null;
 
-    type ReviewPrItem = { id: number; number: number; title: string; html_url: string; user: { login: string; avatar_url: string } | null; updated_at: string; repository_url: string };
-    const reviewsPending = (reviewsPendingRes.data.items as ReviewPrItem[]).map((pr) => ({
-      id: pr.id,
-      number: pr.number,
-      title: pr.title,
-      htmlUrl: pr.html_url,
-      user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
-      updatedAt: pr.updated_at,
-      repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
-    }));
+    type ReviewPrItem = {
+      id: number;
+      number: number;
+      title: string;
+      html_url: string;
+      user: { login: string; avatar_url: string } | null;
+      updated_at: string;
+      repository_url: string;
+    };
+    const reviewsPending = (reviewsPendingRes.data.items as ReviewPrItem[]).map(
+      (pr) => ({
+        id: pr.id,
+        number: pr.number,
+        title: pr.title,
+        htmlUrl: pr.html_url,
+        user: pr.user
+          ? { login: pr.user.login, avatarUrl: pr.user.avatar_url }
+          : null,
+        updatedAt: pr.updated_at,
+        repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
+      }),
+    );
 
     res.json({
       repos,
@@ -357,7 +439,10 @@ export async function handleGetRepoCommits(req: Request, res: Response) {
 
     type CommitItem = {
       sha: string;
-      commit: { message: string; author: { name: string; date: string } | null };
+      commit: {
+        message: string;
+        author: { name: string; date: string } | null;
+      };
       author: { login: string; avatar_url: string } | null;
       html_url: string;
     };
@@ -397,7 +482,11 @@ export async function handleGetCommitDetail(req: Request, res: Response) {
   }
   const octokit = createOctokit(token);
   try {
-    const { data } = await octokit.rest.repos.getCommit({ owner, repo, ref: sha });
+    const { data } = await octokit.rest.repos.getCommit({
+      owner,
+      repo,
+      ref: sha,
+    });
 
     const files = (data.files ?? []).map((f) => ({
       filename: f.filename,
@@ -484,7 +573,9 @@ export async function handleGetRepoPulls(req: Request, res: Response) {
       title: pr.title,
       state: pr.state,
       htmlUrl: pr.html_url,
-      user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
+      user: pr.user
+        ? { login: pr.user.login, avatarUrl: pr.user.avatar_url }
+        : null,
       createdAt: pr.created_at,
       updatedAt: pr.updated_at,
       mergedAt: pr.merged_at,
@@ -506,7 +597,9 @@ export async function handleGetPullDetail(req: Request, res: Response) {
   }
   const { owner, repo, pull_number } = req.params;
   if (!owner || !repo || !pull_number) {
-    res.status(400).json({ error: "owner, repo, and pull_number params required" });
+    res
+      .status(400)
+      .json({ error: "owner, repo, and pull_number params required" });
     return;
   }
   const token = await getGitHubAccessToken(db, session.user.id);
@@ -518,7 +611,12 @@ export async function handleGetPullDetail(req: Request, res: Response) {
   try {
     const [prRes, filesRes] = await Promise.all([
       octokit.rest.pulls.get({ owner, repo, pull_number: Number(pull_number) }),
-      octokit.rest.pulls.listFiles({ owner, repo, pull_number: Number(pull_number), per_page: 100 }),
+      octokit.rest.pulls.listFiles({
+        owner,
+        repo,
+        pull_number: Number(pull_number),
+        per_page: 100,
+      }),
     ]);
 
     const pr = prRes.data;
@@ -542,7 +640,9 @@ export async function handleGetPullDetail(req: Request, res: Response) {
         state: pr.state,
         htmlUrl: pr.html_url,
         diffUrl: pr.diff_url,
-        user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
+        user: pr.user
+          ? { login: pr.user.login, avatarUrl: pr.user.avatar_url }
+          : null,
         createdAt: pr.created_at,
         updatedAt: pr.updated_at,
         mergedAt: pr.merged_at,
@@ -586,7 +686,14 @@ export async function handleGetRepoContents(req: Request, res: Response) {
     const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
 
     if (Array.isArray(data)) {
-      type ContentItem = { name: string; path: string; type: string; size: number; sha: string; html_url: string };
+      type ContentItem = {
+        name: string;
+        path: string;
+        type: string;
+        size: number;
+        sha: string;
+        html_url: string;
+      };
       const items = (data as ContentItem[]).map((item) => ({
         name: item.name,
         path: item.path,
@@ -597,7 +704,16 @@ export async function handleGetRepoContents(req: Request, res: Response) {
       }));
       res.json({ type: "dir", items });
     } else {
-      const file = data as { name: string; path: string; type: string; size: number; sha: string; html_url: string; content?: string; encoding?: string };
+      const file = data as {
+        name: string;
+        path: string;
+        type: string;
+        size: number;
+        sha: string;
+        html_url: string;
+        content?: string;
+        encoding?: string;
+      };
       let content: string | null = null;
       if (file.content && file.encoding === "base64") {
         content = Buffer.from(file.content, "base64").toString("utf-8");

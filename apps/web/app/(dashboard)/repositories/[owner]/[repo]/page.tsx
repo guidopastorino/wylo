@@ -126,7 +126,9 @@ export default function RepoDetailPage() {
   useEffect(() => {
     if (activeTab === "commits" && commits.length === 0) {
       setTabLoading(true);
-      fetch(`/api/github/repos/${owner}/${repo}/commits`, { credentials: "include" })
+      fetch(`/api/github/repos/${owner}/${repo}/commits`, {
+        credentials: "include",
+      })
         .then((res) => res.json())
         .then((data: { commits: Commit[] }) => setCommits(data.commits ?? []))
         .catch(() => {})
@@ -137,7 +139,9 @@ export default function RepoDetailPage() {
   useEffect(() => {
     if (activeTab === "pulls" && pulls.length === 0) {
       setTabLoading(true);
-      fetch(`/api/github/repos/${owner}/${repo}/pulls`, { credentials: "include" })
+      fetch(`/api/github/repos/${owner}/${repo}/pulls`, {
+        credentials: "include",
+      })
         .then((res) => res.json())
         .then((data: { pulls: Pull[] }) => setPulls(data.pulls ?? []))
         .catch(() => {})
@@ -150,34 +154,49 @@ export default function RepoDetailPage() {
       setTabLoading(true);
       setFileContent(null);
       setReadmeContent(null);
-      fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(currentPath)}`, { credentials: "include" })
+      fetch(
+        `/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(currentPath)}`,
+        { credentials: "include" },
+      )
         .then((res) => res.json())
-        .then(async (data: { type: string; items?: ContentItem[]; file?: FileContent }) => {
-          if (data.type === "dir") {
-            setContents(data.items ?? []);
-            setFileContent(null);
-            
-            // Check for README file
-            const readmeFile = data.items?.find((item) => 
-              item.type === "file" && /^readme\.md$/i.test(item.name)
-            );
-            if (readmeFile) {
-              const readmePath = currentPath ? `${currentPath}/${readmeFile.name}` : readmeFile.name;
-              try {
-                const readmeRes = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(readmePath)}`, { credentials: "include" });
-                const readmeData = await readmeRes.json();
-                if (readmeData.type === "file" && readmeData.file?.content) {
-                  setReadmeContent(readmeData.file.content);
+        .then(
+          async (data: {
+            type: string;
+            items?: ContentItem[];
+            file?: FileContent;
+          }) => {
+            if (data.type === "dir") {
+              setContents(data.items ?? []);
+              setFileContent(null);
+
+              // Check for README file
+              const readmeFile = data.items?.find(
+                (item) =>
+                  item.type === "file" && /^readme\.md$/i.test(item.name),
+              );
+              if (readmeFile) {
+                const readmePath = currentPath
+                  ? `${currentPath}/${readmeFile.name}`
+                  : readmeFile.name;
+                try {
+                  const readmeRes = await fetch(
+                    `/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(readmePath)}`,
+                    { credentials: "include" },
+                  );
+                  const readmeData = await readmeRes.json();
+                  if (readmeData.type === "file" && readmeData.file?.content) {
+                    setReadmeContent(readmeData.file.content);
+                  }
+                } catch {
+                  // Ignore readme fetch errors
                 }
-              } catch {
-                // Ignore readme fetch errors
               }
+            } else if (data.type === "file" && data.file) {
+              setFileContent(data.file);
+              setContents([]);
             }
-          } else if (data.type === "file" && data.file) {
-            setFileContent(data.file);
-            setContents([]);
-          }
-        })
+          },
+        )
         .catch(() => {})
         .finally(() => setTabLoading(false));
     }
@@ -204,7 +223,10 @@ export default function RepoDetailPage() {
   if (error || !repoInfo) {
     return (
       <div className="space-y-4">
-        <Link href="/repositories" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          href="/repositories"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="size-4" />
           Volver a repositorios
         </Link>
@@ -226,7 +248,10 @@ export default function RepoDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <Link href="/repositories" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          href="/repositories"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="size-4" />
           Volver a repositorios
         </Link>
@@ -251,12 +276,18 @@ export default function RepoDetailPage() {
                 )}
               </div>
               {repoInfo.description && (
-                <p className="mt-1 text-sm text-muted-foreground">{repoInfo.description}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {repoInfo.description}
+                </p>
               )}
             </div>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <a href={repoInfo.htmlUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={repoInfo.htmlUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ExternalLink className="size-4" />
               Ver en GitHub
             </a>
@@ -299,20 +330,34 @@ export default function RepoDetailPage() {
                   <h2 className="text-sm font-semibold">Información</h2>
                   <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <dt className="text-xs text-muted-foreground">Lenguaje principal</dt>
-                      <dd className="mt-1 text-sm font-medium">{repoInfo.language ?? "—"}</dd>
+                      <dt className="text-xs text-muted-foreground">
+                        Lenguaje principal
+                      </dt>
+                      <dd className="mt-1 text-sm font-medium">
+                        {repoInfo.language ?? "—"}
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">Branch por defecto</dt>
-                      <dd className="mt-1 text-sm font-medium">{repoInfo.defaultBranch}</dd>
+                      <dt className="text-xs text-muted-foreground">
+                        Branch por defecto
+                      </dt>
+                      <dd className="mt-1 text-sm font-medium">
+                        {repoInfo.defaultBranch}
+                      </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">Último push</dt>
-                      <dd className="mt-1 text-sm font-medium">{formatTimeAgo(repoInfo.pushedAt)}</dd>
+                      <dt className="text-xs text-muted-foreground">
+                        Último push
+                      </dt>
+                      <dd className="mt-1 text-sm font-medium">
+                        {formatTimeAgo(repoInfo.pushedAt)}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Creado</dt>
-                      <dd className="mt-1 text-sm font-medium">{new Date(repoInfo.createdAt).toLocaleDateString()}</dd>
+                      <dd className="mt-1 text-sm font-medium">
+                        {new Date(repoInfo.createdAt).toLocaleDateString()}
+                      </dd>
                     </div>
                   </dl>
                 </div>
@@ -327,7 +372,9 @@ export default function RepoDetailPage() {
                         <Star className="size-4" />
                         Stars
                       </span>
-                      <span className="font-medium">{repoInfo.stargazersCount}</span>
+                      <span className="font-medium">
+                        {repoInfo.stargazersCount}
+                      </span>
                     </li>
                     <li className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -341,7 +388,9 @@ export default function RepoDetailPage() {
                         <GitPullRequest className="size-4" />
                         Issues abiertas
                       </span>
-                      <span className="font-medium">{repoInfo.openIssuesCount}</span>
+                      <span className="font-medium">
+                        {repoInfo.openIssuesCount}
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -353,15 +402,22 @@ export default function RepoDetailPage() {
           {activeTab === "commits" && (
             <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border px-4 py-3">
-                <p className="text-sm font-medium text-muted-foreground">Últimos {commits.length} commits</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Últimos {commits.length} commits
+                </p>
               </div>
               <ul className="divide-y divide-border">
                 {commits.length === 0 ? (
-                  <li className="px-4 py-8 text-center text-sm text-muted-foreground">No hay commits</li>
+                  <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    No hay commits
+                  </li>
                 ) : (
                   commits.map((commit) => (
                     <li key={commit.sha} className="px-4 py-3">
-                      <Link href={`/repositories/${owner}/${repo}/commits/${commit.sha}`} className="block hover:opacity-80">
+                      <Link
+                        href={`/repositories/${owner}/${repo}/commits/${commit.sha}`}
+                        className="block hover:opacity-80"
+                      >
                         <div className="flex items-start gap-3">
                           {commit.authorAvatarUrl ? (
                             <Image
@@ -377,9 +433,14 @@ export default function RepoDetailPage() {
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="line-clamp-2 text-sm font-medium">{commit.message.split("\n")[0]}</p>
+                            <p className="line-clamp-2 text-sm font-medium">
+                              {commit.message.split("\n")[0]}
+                            </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {commit.authorLogin ?? commit.authorName ?? "—"} · {commit.authorDate ? formatTimeAgo(commit.authorDate) : "—"}
+                              {commit.authorLogin ?? commit.authorName ?? "—"} ·{" "}
+                              {commit.authorDate
+                                ? formatTimeAgo(commit.authorDate)
+                                : "—"}
                             </p>
                           </div>
                           <code className="shrink-0 rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
@@ -398,31 +459,45 @@ export default function RepoDetailPage() {
           {activeTab === "pulls" && (
             <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border px-4 py-3">
-                <p className="text-sm font-medium text-muted-foreground">{pulls.length} pull requests</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {pulls.length} pull requests
+                </p>
               </div>
               <ul className="divide-y divide-border">
                 {pulls.length === 0 ? (
-                  <li className="px-4 py-8 text-center text-sm text-muted-foreground">No hay pull requests</li>
+                  <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    No hay pull requests
+                  </li>
                 ) : (
                   pulls.map((pr) => (
                     <li key={pr.id} className="px-4 py-3">
-                      <Link href={`/repositories/${owner}/${repo}/pulls/${pr.number}`} className="block hover:opacity-80">
+                      <Link
+                        href={`/repositories/${owner}/${repo}/pulls/${pr.number}`}
+                        className="block hover:opacity-80"
+                      >
                         <div className="flex items-start gap-3">
                           <GitPullRequest
                             className={cn(
                               "mt-0.5 size-5 shrink-0",
-                              pr.state === "open" ? "text-emerald-500" : pr.mergedAt ? "text-violet-500" : "text-red-500",
+                              pr.state === "open"
+                                ? "text-emerald-500"
+                                : pr.mergedAt
+                                  ? "text-violet-500"
+                                  : "text-red-500",
                             )}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-sm font-medium">{pr.title}</p>
                               {pr.draft && (
-                                <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">Draft</span>
+                                <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                                  Draft
+                                </span>
                               )}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              #{pr.number} · {pr.user?.login ?? "—"} · {formatTimeAgo(pr.updatedAt)}
+                              #{pr.number} · {pr.user?.login ?? "—"} ·{" "}
+                              {formatTimeAgo(pr.updatedAt)}
                             </p>
                           </div>
                           <span
@@ -435,7 +510,11 @@ export default function RepoDetailPage() {
                                   : "bg-red-500/10 text-red-600 dark:text-red-400",
                             )}
                           >
-                            {pr.state === "open" ? "Open" : pr.mergedAt ? "Merged" : "Closed"}
+                            {pr.state === "open"
+                              ? "Open"
+                              : pr.mergedAt
+                                ? "Merged"
+                                : "Closed"}
                           </span>
                         </div>
                       </Link>
@@ -458,27 +537,25 @@ export default function RepoDetailPage() {
                 >
                   {repoInfo.name}
                 </button>
-                {currentPath && (
-                  <>
-                    {currentPath.split("/").map((part, i, arr) => {
-                      const path = arr.slice(0, i + 1).join("/");
-                      return (
-                        <span key={path} className="flex items-center gap-1">
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                          <button
-                            type="button"
-                            onClick={() => navigateToPath(path)}
-                            className={cn(
-                              i === arr.length - 1 ? "text-foreground" : "text-primary hover:underline",
-                            )}
-                          >
-                            {part}
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </>
-                )}
+                {currentPath?.split("/")?.map((part, i, arr) => {
+                  const path = arr.slice(0, i + 1).join("/");
+                  return (
+                    <span key={path} className="flex items-center gap-1">
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                      <button
+                        type="button"
+                        onClick={() => navigateToPath(path)}
+                        className={cn(
+                          i === arr.length - 1
+                            ? "text-foreground"
+                            : "text-primary hover:underline",
+                        )}
+                      >
+                        {part}
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
 
               {fileContent ? (
@@ -505,7 +582,8 @@ export default function RepoDetailPage() {
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Archivo demasiado grande para mostrar ({Math.round(fileContent.size / 1024)} KB)
+                      Archivo demasiado grande para mostrar (
+                      {Math.round(fileContent.size / 1024)} KB)
                     </p>
                   )}
                 </div>

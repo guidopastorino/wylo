@@ -9,7 +9,6 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type DashboardData = {
   repos: { id: number; fullName: string; name: string; private: boolean }[];
@@ -61,10 +60,7 @@ function formatTimeAgo(iso: string) {
   return d.toLocaleDateString();
 }
 
-function Avatar({
-  initials,
-  src,
-}: { initials: string; src?: string | null }) {
+function Avatar({ initials, src }: { initials: string; src?: string | null }) {
   if (src) {
     return (
       <img
@@ -122,7 +118,11 @@ export default function DashboardPage() {
     );
   }
 
-  const metrics = data?.metrics ?? { myOpenPulls: 0, reviewsPendingCount: 0, avgTimeToMergeHours: null };
+  const metrics = data?.metrics ?? {
+    myOpenPulls: 0,
+    reviewsPendingCount: 0,
+    avgTimeToMergeHours: null,
+  };
   const activity = data?.activity ?? [];
   const pulls = data?.pulls ?? [];
   const reviewsPending = data?.reviewsPending ?? [];
@@ -133,7 +133,10 @@ export default function DashboardPage() {
       {connectedRepos.length === 0 && (
         <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
           Conectá repos en{" "}
-          <Link href="/repositories" className="font-medium text-primary hover:underline">
+          <Link
+            href="/repositories"
+            className="font-medium text-primary hover:underline"
+          >
             Repositories
           </Link>{" "}
           para que las métricas y la actividad solo muestren esos repos.
@@ -201,7 +204,10 @@ export default function DashboardPage() {
               </li>
             ) : (
               activity.map((item) => (
-                <li key={`${item.repoFullName}-${item.number}`} className="px-4 py-3">
+                <li
+                  key={`${item.repoFullName}-${item.number}`}
+                  className="px-4 py-3"
+                >
                   <div className="flex gap-3">
                     <Avatar
                       initials={item.user.slice(0, 2).toUpperCase()}
