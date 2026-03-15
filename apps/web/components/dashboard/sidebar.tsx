@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,11 +32,6 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-const trackedRepos = [
-  { name: "main-webapp-core", branch: "main" },
-  { name: "release/v2.4.0", branch: "release" },
-];
-
 type UserInfo = {
   name?: string | null;
   email?: string | null;
@@ -53,6 +49,25 @@ export function Sidebar({
   const router = useRouter();
   const { data: session } = useSession();
   const user = userProp ?? session?.user ?? null;
+  const [connectedRepos, setConnectedRepos] = useState<string[]>([]);
+
+  const fetchConnectedRepos = useCallback(() => {
+    fetch("/api/github/connected-repos", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { connectedRepos: [] }))
+      .then((data: { connectedRepos?: string[] }) =>
+        setConnectedRepos(data?.connectedRepos ?? []),
+      )
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetchConnectedRepos();
+    const onUpdate = () => fetchConnectedRepos();
+    window.addEventListener("connected-repos-changed", onUpdate);
+    return () =>
+      window.removeEventListener("connected-repos-changed", onUpdate);
+  }, [session?.user?.id, fetchConnectedRepos]);
 
   const linkClass = (href: string) =>
     cn(
@@ -102,18 +117,30 @@ export function Sidebar({
             Tracked repositories
           </p>
           <ul className="space-y-1">
-            {trackedRepos.map((repo) => (
-              <li
-                key={repo.name}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground"
-              >
-                <GitBranch className="size-3.5 shrink-0" />
-                <span className="truncate">{repo.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground/70">
-                  {repo.branch}
-                </span>
+            {connectedRepos.length === 0 ? (
+              <li className="px-3 py-2 text-xs text-muted-foreground">
+                Ninguno.{" "}
+                <Link
+                  href="/repositories"
+                  onClick={onNavigate}
+                  className="text-primary hover:underline"
+                >
+                  Conectar
+                </Link>
               </li>
-            ))}
+            ) : (
+              connectedRepos.map((fullName) => (
+                <li
+                  key={fullName}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground"
+                >
+                  <GitBranch className="size-3.5 shrink-0" />
+                  <span className="truncate" title={fullName}>
+                    {fullName}
+                  </span>
+                </li>
+              ))
+            )}
           </ul>
         </div>
 
