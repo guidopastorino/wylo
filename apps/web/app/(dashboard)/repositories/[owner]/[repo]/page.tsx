@@ -18,6 +18,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-block";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { cn } from "@/lib/utils";
 
 type RepoInfo = {
@@ -104,6 +106,7 @@ export default function RepoDetailPage() {
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [currentPath, setCurrentPath] = useState("");
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
+  const [readmeContent, setReadmeContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabLoading, setTabLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -146,12 +149,30 @@ export default function RepoDetailPage() {
     if (activeTab === "code") {
       setTabLoading(true);
       setFileContent(null);
+      setReadmeContent(null);
       fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(currentPath)}`, { credentials: "include" })
         .then((res) => res.json())
-        .then((data: { type: string; items?: ContentItem[]; file?: FileContent }) => {
+        .then(async (data: { type: string; items?: ContentItem[]; file?: FileContent }) => {
           if (data.type === "dir") {
             setContents(data.items ?? []);
             setFileContent(null);
+            
+            // Check for README file
+            const readmeFile = data.items?.find((item) => 
+              item.type === "file" && /^readme\.md$/i.test(item.name)
+            );
+            if (readmeFile) {
+              const readmePath = currentPath ? `${currentPath}/${readmeFile.name}` : readmeFile.name;
+              try {
+                const readmeRes = await fetch(`/api/github/repos/${owner}/${repo}/contents?path=${encodeURIComponent(readmePath)}`, { credentials: "include" });
+                const readmeData = await readmeRes.json();
+                if (readmeData.type === "file" && readmeData.file?.content) {
+                  setReadmeContent(readmeData.file.content);
+                }
+              } catch {
+                // Ignore readme fetch errors
+              }
+            }
           } else if (data.type === "file" && data.file) {
             setFileContent(data.file);
             setContents([]);
@@ -461,7 +482,7 @@ export default function RepoDetailPage() {
               </div>
 
               {fileContent ? (
-                <div className="p-4">
+                <div className="space-y-4 p-4">
                   <div className="flex items-center justify-between">
                     <Button variant="ghost" size="sm" onClick={navigateUp}>
                       <ArrowLeft className="size-4" />
@@ -477,58 +498,75 @@ export default function RepoDetailPage() {
                     </a>
                   </div>
                   {fileContent.content ? (
-                    <pre className="mt-4 max-h-[60vh] overflow-auto rounded-lg bg-muted p-4 text-xs">
-                      <code>{fileContent.content}</code>
-                    </pre>
+                    <CodeBlock
+                      code={fileContent.content}
+                      filename={fileContent.path}
+                      maxHeight="none"
+                    />
                   ) : (
-                    <p className="mt-4 text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Archivo demasiado grande para mostrar ({Math.round(fileContent.size / 1024)} KB)
                     </p>
                   )}
                 </div>
               ) : (
-                <ul className="divide-y divide-border">
-                  {currentPath && (
-                    <li>
-                      <button
-                        type="button"
-                        onClick={navigateUp}
-                        className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-muted/50"
-                      >
-                        <Folder className="size-4 text-muted-foreground" />
-                        <span>..</span>
-                      </button>
-                    </li>
+                <>
+                  <ul className="divide-y divide-border">
+                    {currentPath && (
+                      <li>
+                        <button
+                          type="button"
+                          onClick={navigateUp}
+                          className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-muted/50 cursor-pointer"
+                        >
+                          <Folder className="size-4 text-muted-foreground" />
+                          <span>..</span>
+                        </button>
+                      </li>
+                    )}
+                    {contents.length === 0 && !currentPath ? (
+                      <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        No hay archivos
+                      </li>
+                    ) : (
+                      [...contents]
+                        .sort((a, b) => {
+                          if (a.type === "dir" && b.type !== "dir") return -1;
+                          if (a.type !== "dir" && b.type === "dir") return 1;
+                          return a.name.localeCompare(b.name);
+                        })
+                        .map((item) => (
+                          <li key={item.sha}>
+                            <button
+                              type="button"
+                              onClick={() => navigateToPath(item.path)}
+                              className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-muted/50 cursor-pointer"
+                            >
+                              {item.type === "dir" ? (
+                                <Folder className="size-4 text-blue-500" />
+                              ) : (
+                                <File className="size-4 text-muted-foreground" />
+                              )}
+                              <span>{item.name}</span>
+                            </button>
+                          </li>
+                        ))
+                    )}
+                  </ul>
+
+                  {/* README preview */}
+                  {readmeContent && (
+                    <div className="border-t border-border">
+                      <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-4 py-2">
+                        <File className="size-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">README.md</span>
+                      </div>
+                      <div className="p-6">
+                        <MarkdownContent content={readmeContent} />
+                      </div>
+                    </div>
                   )}
-                  {contents.length === 0 && !currentPath ? (
-                    <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      No hay archivos
-                    </li>
-                  ) : (
-                    [...contents]
-                      .sort((a, b) => {
-                        if (a.type === "dir" && b.type !== "dir") return -1;
-                        if (a.type !== "dir" && b.type === "dir") return 1;
-                        return a.name.localeCompare(b.name);
-                      })
-                      .map((item) => (
-                        <li key={item.sha}>
-                          <button
-                            type="button"
-                            onClick={() => navigateToPath(item.path)}
-                            className="flex w-full items-center gap-3 px-4 py-2 text-sm hover:bg-muted/50"
-                          >
-                            {item.type === "dir" ? (
-                              <Folder className="size-4 text-blue-500" />
-                            ) : (
-                              <File className="size-4 text-muted-foreground" />
-                            )}
-                            <span>{item.name}</span>
-                          </button>
-                        </li>
-                      ))
-                  )}
-                </ul>
+                </>
               )}
             </div>
           )}

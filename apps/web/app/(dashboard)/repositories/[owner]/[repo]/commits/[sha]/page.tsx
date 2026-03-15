@@ -2,11 +2,9 @@
 
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronRight,
   ExternalLink,
-  File,
   GitCommit,
+  Loader2,
   Minus,
   Plus,
 } from "lucide-react";
@@ -15,7 +13,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { FileDiffCard } from "@/components/ui/diff-viewer";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 type CommitDetail = {
   sha: string;
@@ -53,129 +52,6 @@ function formatTimeAgo(dateStr: string) {
   return `hace ${days}d`;
 }
 
-function DiffViewer({ patch }: { patch: string }) {
-  const lines = patch.split("\n");
-
-  return (
-    <div className="overflow-x-auto text-xs">
-      <table className="w-full border-collapse font-mono">
-        <tbody>
-          {lines.map((line, i) => {
-            const isAddition = line.startsWith("+") && !line.startsWith("+++");
-            const isDeletion = line.startsWith("-") && !line.startsWith("---");
-            const isHunk = line.startsWith("@@");
-            const isHeader = line.startsWith("+++") || line.startsWith("---");
-
-            return (
-              <tr
-                key={i}
-                className={cn(
-                  isAddition && "bg-emerald-500/10",
-                  isDeletion && "bg-red-500/10",
-                  isHunk && "bg-blue-500/10",
-                )}
-              >
-                <td className="w-4 select-none border-r border-border px-2 py-0.5 text-right text-muted-foreground">
-                  {!isHunk && !isHeader && (
-                    <span
-                      className={cn(
-                        isAddition && "text-emerald-600 dark:text-emerald-400",
-                        isDeletion && "text-red-600 dark:text-red-400",
-                      )}
-                    >
-                      {isAddition ? "+" : isDeletion ? "-" : " "}
-                    </span>
-                  )}
-                </td>
-                <td
-                  className={cn(
-                    "whitespace-pre px-3 py-0.5",
-                    isAddition && "text-emerald-700 dark:text-emerald-300",
-                    isDeletion && "text-red-700 dark:text-red-300",
-                    isHunk && "text-blue-600 dark:text-blue-400",
-                    isHeader && "text-muted-foreground",
-                  )}
-                >
-                  {line}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function FileCard({
-  file,
-  defaultExpanded,
-}: {
-  file: FileChange;
-  defaultExpanded: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-
-  const statusColors: Record<string, string> = {
-    added: "text-emerald-600 dark:text-emerald-400",
-    removed: "text-red-600 dark:text-red-400",
-    modified: "text-amber-600 dark:text-amber-400",
-    renamed: "text-blue-600 dark:text-blue-400",
-  };
-
-  return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50"
-      >
-        {expanded ? (
-          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        )}
-        <File className="size-4 shrink-0 text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">
-          {file.filename}
-        </span>
-        <span
-          className={cn(
-            "shrink-0 text-xs font-medium",
-            statusColors[file.status] ?? "text-muted-foreground",
-          )}
-        >
-          {file.status}
-        </span>
-        <div className="flex shrink-0 items-center gap-2 text-xs">
-          {file.additions > 0 && (
-            <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
-              <Plus className="size-3" />
-              {file.additions}
-            </span>
-          )}
-          {file.deletions > 0 && (
-            <span className="flex items-center gap-0.5 text-red-600 dark:text-red-400">
-              <Minus className="size-3" />
-              {file.deletions}
-            </span>
-          )}
-        </div>
-      </button>
-      {expanded && file.patch && (
-        <div className="border-t border-border">
-          <DiffViewer patch={file.patch} />
-        </div>
-      )}
-      {expanded && !file.patch && (
-        <div className="border-t border-border px-4 py-6 text-center text-sm text-muted-foreground">
-          Archivo binario o demasiado grande para mostrar diff
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function CommitDetailPage() {
   const params = useParams();
   const owner = params.owner as string;
@@ -207,7 +83,7 @@ export default function CommitDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="size-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -321,10 +197,8 @@ export default function CommitDetailPage() {
       {/* Body */}
       {body && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="text-sm font-semibold">Descripción</h2>
-          <pre className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
-            {body}
-          </pre>
+          <h2 className="mb-3 text-sm font-semibold">Descripción</h2>
+          <MarkdownContent content={body} />
         </div>
       )}
 
@@ -340,7 +214,7 @@ export default function CommitDetailPage() {
         ) : (
           <div className="space-y-3">
             {files.map((file, i) => (
-              <FileCard key={file.filename} file={file} defaultExpanded={i < 3} />
+              <FileDiffCard key={file.filename} file={file} defaultExpanded={i < 3} />
             ))}
           </div>
         )}
