@@ -42,6 +42,13 @@ export const auth = betterAuth({
     github: {
       clientId: getEnvOptional("GITHUB_CLIENT_ID"),
       clientSecret: getEnvOptional("GITHUB_CLIENT_SECRET"),
+      scope: [
+        "user:email", // required by Better Auth for email
+        "read:user", // profile (name, avatar)
+        "repo", // full repo access: PRs, commits, code, issues
+        "read:org", // list repos in orgs the user belongs to
+        "workflow", // read GitHub Actions status (e.g. CI on PRs)
+      ],
     },
     slack: {
       clientId: getEnvOptional("SLACK_CLIENT_ID"),
