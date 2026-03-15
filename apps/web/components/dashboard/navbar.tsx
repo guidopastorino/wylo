@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { CalendarDays, Menu, Triangle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,8 +9,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Sidebar } from "./sidebar";
 import { cn } from "@/lib/utils";
+import { Sidebar } from "./sidebar";
 
 function useCurrentDate() {
   const [date, setDate] = useState(() => new Date());
@@ -68,10 +68,7 @@ export function DashboardNavbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="px-3 text-xs"
-            >
+            <Button size="sm" className="px-3 text-xs">
               Export
             </Button>
             <Button
@@ -97,4 +94,3 @@ export function DashboardNavbar() {
     </>
   );
 }
-

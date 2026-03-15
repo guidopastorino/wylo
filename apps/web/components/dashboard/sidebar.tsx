@@ -1,17 +1,18 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
   FileText,
   FolderGit2,
-  Users,
-  Settings,
   GitBranch,
-  User,
+  LayoutDashboard,
   LogOut,
+  Settings,
+  User,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { authClient, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -67,14 +67,14 @@ export function Sidebar({
     router.refresh();
   };
 
-  const displayName =
-    user?.name ?? user?.email ?? "Usuario";
-  const initials = displayName
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase() || "U";
+  const displayName = user?.name ?? user?.email ?? "Usuario";
+  const initials =
+    displayName
+      .split(" ")
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "U";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -154,10 +154,7 @@ export function Sidebar({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={handleSignOut}
-            >
+            <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
               <LogOut className="size-4" />
               Cerrar sesión
             </DropdownMenuItem>

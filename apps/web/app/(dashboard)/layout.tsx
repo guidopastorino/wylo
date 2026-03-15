@@ -1,11 +1,11 @@
 "use client";
 
+import { Triangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Triangle } from "lucide-react";
-import { useSession } from "@/lib/auth-client";
-import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardNavbar } from "@/components/dashboard/navbar";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({

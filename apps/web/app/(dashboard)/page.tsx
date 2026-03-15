@@ -1,12 +1,7 @@
 "use client";
 
+import { CheckCircle2, Flag, GitPullRequest, TrendingDown } from "lucide-react";
 import Link from "next/link";
-import {
-  TrendingDown,
-  GitPullRequest,
-  CheckCircle2,
-  Flag,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -211,8 +206,7 @@ export default function DashboardPage() {
                         "bg-destructive/20 text-destructive",
                       h.variant === "warning" &&
                         "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-                      h.variant === "muted" &&
-                        "bg-muted text-muted-foreground",
+                      h.variant === "muted" && "bg-muted text-muted-foreground",
                     )}
                   >
                     {h.badge}
