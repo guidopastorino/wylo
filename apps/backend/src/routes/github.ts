@@ -382,7 +382,21 @@ export async function handleGetRepoDetail(req: Request, res: Response) {
   }
   const octokit = createOctokit(token);
   try {
-    const { data: repoData } = await octokit.rest.repos.get({ owner, repo });
+    const [{ data: repoData }, { data: commitsData }, { data: pullsData }] =
+      await Promise.all([
+        octokit.rest.repos.get({ owner, repo }),
+        octokit.rest.repos.listCommits({
+          owner,
+          repo,
+          per_page: 100,
+        }),
+        octokit.rest.pulls.list({
+          owner,
+          repo,
+          state: "all",
+          per_page: 100,
+        }),
+      ]);
 
     res.json({
       repo: {
@@ -406,6 +420,8 @@ export async function handleGetRepoDetail(req: Request, res: Response) {
           avatarUrl: repoData.owner.avatar_url,
         },
       },
+      commitsCount: (commitsData as unknown[]).length,
+      pullsCount: (pullsData as unknown[]).length,
     });
   } catch (err) {
     console.error("Repo detail error:", err);
@@ -661,6 +677,57 @@ export async function handleGetPullDetail(req: Request, res: Response) {
   } catch (err) {
     console.error("Pull detail error:", err);
     res.status(500).json({ error: "Failed to fetch pull request details" });
+  }
+}
+
+type PullCommitItem = {
+  sha: string;
+  commit: { message: string; author: { name: string; date: string } | null };
+  author: { login: string; avatar_url: string } | null;
+  html_url: string;
+};
+
+export async function handleGetPullCommits(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo, pull_number } = req.params;
+  if (!owner || !repo || !pull_number) {
+    res
+      .status(400)
+      .json({ error: "owner, repo, and pull_number params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const { data } = await octokit.rest.pulls.listCommits({
+      owner,
+      repo,
+      pull_number: Number(pull_number),
+      per_page: 100,
+    });
+
+    const commits = (data as PullCommitItem[]).map((c) => ({
+      sha: c.sha,
+      message: c.commit.message,
+      authorName: c.commit.author?.name ?? null,
+      authorDate: c.commit.author?.date ?? null,
+      authorLogin: c.author?.login ?? null,
+      authorAvatarUrl: c.author?.avatar_url ?? null,
+      htmlUrl: c.html_url,
+    }));
+
+    res.json({ commits });
+  } catch (err) {
+    console.error("Pull commits error:", err);
+    res.status(500).json({ error: "Failed to fetch PR commits" });
   }
 }
 

@@ -101,6 +101,8 @@ export default function RepoDetailPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [repoInfo, setRepoInfo] = useState<RepoInfo | null>(null);
+  const [commitsCount, setCommitsCount] = useState(0);
+  const [pullsCount, setPullsCount] = useState(0);
   const [commits, setCommits] = useState<Commit[]>([]);
   const [pulls, setPulls] = useState<Pull[]>([]);
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -118,7 +120,17 @@ export default function RepoDetailPage() {
         if (!res.ok) throw new Error("Failed to load repo");
         return res.json();
       })
-      .then((data: { repo: RepoInfo }) => setRepoInfo(data.repo))
+      .then(
+        (data: {
+          repo: RepoInfo;
+          commitsCount?: number;
+          pullsCount?: number;
+        }) => {
+          setRepoInfo(data.repo);
+          setCommitsCount(data.commitsCount ?? 0);
+          setPullsCount(data.pullsCount ?? 0);
+        },
+      )
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
   }, [owner, repo]);
@@ -311,6 +323,12 @@ export default function RepoDetailPage() {
           >
             <tab.icon className="size-4" />
             {tab.label}
+            {tab.id === "commits" && commitsCount > 0 && (
+              <span className="text-muted-foreground">{commitsCount}</span>
+            )}
+            {tab.id === "pulls" && pullsCount > 0 && (
+              <span className="text-muted-foreground">{pullsCount}</span>
+            )}
           </button>
         ))}
       </div>
@@ -614,7 +632,7 @@ export default function RepoDetailPage() {
                           return a.name.localeCompare(b.name);
                         })
                         .map((item) => (
-                          <li key={item.sha}>
+                          <li key={item.path}>
                             <button
                               type="button"
                               onClick={() => navigateToPath(item.path)}

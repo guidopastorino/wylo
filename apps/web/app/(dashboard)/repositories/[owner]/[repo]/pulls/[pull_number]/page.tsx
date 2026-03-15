@@ -2,8 +2,11 @@
 
 import {
   ArrowLeft,
+  ChevronDown,
+  ChevronRight,
   ExternalLink,
   GitBranch,
+  GitCommit,
   GitMerge,
   GitPullRequest,
   Loader2,
@@ -13,7 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileDiffCard } from "@/components/ui/diff-viewer";
 import { MarkdownContent } from "@/components/ui/markdown-content";
@@ -53,6 +56,27 @@ type FileChange = {
   rawUrl: string;
 };
 
+type PrCommit = {
+  sha: string;
+  message: string;
+  authorName: string | null;
+  authorDate: string | null;
+  authorLogin: string | null;
+  authorAvatarUrl: string | null;
+  htmlUrl: string;
+};
+
+type CommitDetail = {
+  sha: string;
+  message: string;
+  htmlUrl: string;
+  authorName: string | null;
+  authorLogin: string | null;
+  authorAvatarUrl: string | null;
+  authorDate: string | null;
+  stats: { additions: number; deletions: number; total: number };
+};
+
 function formatTimeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -71,6 +95,16 @@ export default function PullDetailPage() {
 
   const [pull, setPull] = useState<PullDetail | null>(null);
   const [files, setFiles] = useState<FileChange[]>([]);
+  const [commits, setCommits] = useState<PrCommit[]>([]);
+  const [commitsLoading, setCommitsLoading] = useState(false);
+  const [selectedCommitSha, setSelectedCommitSha] = useState<string | null>(
+    null,
+  );
+  const [commitDetail, setCommitDetail] = useState<{
+    commit: CommitDetail;
+    files: FileChange[];
+  } | null>(null);
+  const [commitDetailLoading, setCommitDetailLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +124,48 @@ export default function PullDetailPage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
   }, [owner, repo, pullNumber]);
+
+  useEffect(() => {
+    if (!owner || !repo || !pullNumber) return;
+    setCommitsLoading(true);
+    fetch(`/api/github/repos/${owner}/${repo}/pulls/${pullNumber}/commits`, {
+      credentials: "include",
+    })
+      .then((res) => (res.ok ? res.json() : { commits: [] }))
+      .then((data: { commits?: PrCommit[] }) => setCommits(data?.commits ?? []))
+      .catch(() => setCommits([]))
+      .finally(() => setCommitsLoading(false));
+  }, [owner, repo, pullNumber]);
+
+  const fetchCommitDetail = useCallback(
+    (sha: string) => {
+      if (selectedCommitSha === sha && commitDetail?.commit.sha === sha) {
+        setSelectedCommitSha(null);
+        setCommitDetail(null);
+        return;
+      }
+      setSelectedCommitSha(sha);
+      setCommitDetailLoading(true);
+      setCommitDetail(null);
+      fetch(`/api/github/repos/${owner}/${repo}/commits/${sha}`, {
+        credentials: "include",
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then(
+          (
+            data: {
+              commit: CommitDetail;
+              files: FileChange[];
+            } | null,
+          ) => {
+            if (data && data.commit.sha === sha) setCommitDetail(data);
+          },
+        )
+        .catch(() => setCommitDetail(null))
+        .finally(() => setCommitDetailLoading(false));
+    },
+    [owner, repo, selectedCommitSha, commitDetail?.commit.sha],
+  );
 
   if (loading) {
     return (
@@ -232,6 +308,115 @@ export default function PullDetailPage() {
           <MarkdownContent content={pull.body} />
         </div>
       )}
+
+      {/* Commits */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <GitCommit className="size-4" />
+          Commits ({commits.length})
+        </h2>
+        {commitsLoading ? (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-8 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Cargando commits…
+          </div>
+        ) : commits.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+            No hay commits
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <ul className="divide-y divide-border">
+              {commits.map((c) => {
+                const isSelected = selectedCommitSha === c.sha;
+                const firstLine =
+                  c.message.split("\n")[0].slice(0, 72) +
+                  (c.message.split("\n")[0].length > 72 ? "…" : "");
+                return (
+                  <li key={c.sha}>
+                    <button
+                      type="button"
+                      onClick={() => fetchCommitDetail(c.sha)}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                        isSelected && "bg-muted/70",
+                      )}
+                    >
+                      <span className="shrink-0 text-muted-foreground">
+                        {isSelected ? (
+                          <ChevronDown className="size-4" />
+                        ) : (
+                          <ChevronRight className="size-4" />
+                        )}
+                      </span>
+                      <code className="shrink-0 font-mono text-xs text-muted-foreground">
+                        {c.sha.slice(0, 7)}
+                      </code>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {firstLine}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        {c.authorAvatarUrl && (
+                          <Image
+                            src={c.authorAvatarUrl}
+                            alt={c.authorLogin ?? ""}
+                            width={20}
+                            height={20}
+                            className="rounded-full"
+                          />
+                        )}
+                        {c.authorLogin ?? c.authorName ?? "—"}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatTimeAgo(c.authorDate ?? c.sha)}
+                      </span>
+                    </button>
+                    {isSelected && (
+                      <div className="border-t border-border bg-muted/30 px-4 py-4">
+                        {commitDetailLoading ||
+                        commitDetail?.commit.sha !== c.sha ? (
+                          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                            <Loader2 className="size-4 animate-spin" />
+                            Cargando archivos del commit…
+                          </div>
+                        ) : commitDetail?.files &&
+                          commitDetail.files.length > 0 ? (
+                          <div className="space-y-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Archivos en este commit (
+                              {commitDetail.files.length})
+                            </p>
+                            {commitDetail.files.map((file, i) => (
+                              <FileDiffCard
+                                key={file.filename}
+                                file={file}
+                                defaultExpanded={i < 2}
+                              />
+                            ))}
+                            <a
+                              href={commitDetail.commit.htmlUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <ExternalLink className="size-4" />
+                              Ver commit en GitHub
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Sin archivos o no se pudieron cargar.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
 
       {/* Files changed */}
       <div className="space-y-4">

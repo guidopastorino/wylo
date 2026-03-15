@@ -1,14 +1,58 @@
 "use client";
 
-import { FolderGit2, Loader2, Mail, User } from "lucide-react";
+import { Check, FolderGit2, Loader2, Mail, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSession } from "@/lib/auth-client";
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { authClient, useSession } from "@/lib/auth-client";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  github: "GitHub",
+  slack: "Slack",
+  vercel: "Vercel",
+};
 
 export default function SettingsPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending: sessionPending } = useSession();
+  const [accounts, setAccounts] = useState<{ providerId: string }[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [linking, setLinking] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
-  if (isPending || !session?.user) {
+  const fetchAccounts = useCallback(() => {
+    setAccountsLoading(true);
+    fetch("/api/user/accounts", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { accounts: [] }))
+      .then((data: { accounts?: { providerId: string }[] }) =>
+        setAccounts(data?.accounts ?? []),
+      )
+      .catch(() => setAccounts([]))
+      .finally(() => setAccountsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.id) fetchAccounts();
+  }, [session?.user?.id, fetchAccounts]);
+
+  const hasProvider = (providerId: string) =>
+    accounts.some((a) => a.providerId === providerId);
+
+  const handleLinkGitHub = async () => {
+    setLinkError(null);
+    setLinking("github");
+    try {
+      await authClient.linkSocial({
+        provider: "github",
+        callbackURL: "/settings",
+      });
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : "Error al vincular");
+      setLinking(null);
+    }
+  };
+
+  if (sessionPending || !session?.user) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
@@ -71,6 +115,70 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Cuentas vinculadas */}
+      <div className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold">Cuentas vinculadas</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Conecta GitHub para ver repos, PRs y métricas. Vincula otras cuentas
+            si lo necesitas.
+          </p>
+        </div>
+        <div className="mx-4 mt-3 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+          El email de la cuenta que conectes (p. ej. GitHub) debe coincidir con
+          el de tu cuenta actual ({user.email ?? "tu email"}).
+        </div>
+        {accountsLoading ? (
+          <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Cargando…
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {["github", "slack", "vercel"].map((providerId) => {
+              const connected = hasProvider(providerId);
+              const label = PROVIDER_LABELS[providerId] ?? providerId;
+              return (
+                <li
+                  key={providerId}
+                  className="flex items-center justify-between gap-4 px-4 py-3"
+                >
+                  <span className="text-sm font-medium">{label}</span>
+                  {connected ? (
+                    <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                      <Check className="size-4" />
+                      Conectado
+                    </span>
+                  ) : providerId === "github" ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleLinkGitHub}
+                      disabled={linking !== null}
+                    >
+                      {linking === "github" ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        "Conectar GitHub"
+                      )}
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      No disponible para vincular
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {linkError && (
+          <p className="border-t border-border px-4 py-2 text-sm text-destructive">
+            {linkError}
+          </p>
+        )}
       </div>
 
       {/* Accesos rápidos */}

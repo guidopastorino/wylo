@@ -7,6 +7,7 @@ import {
   handleGetCommitDetail,
   handleGetConnectedRepos,
   handleGetDashboard,
+  handleGetPullCommits,
   handleGetPullDetail,
   handleGetPulls,
   handleGetRepoCommits,
@@ -16,6 +17,7 @@ import {
   handleGetRepos,
   handlePostConnectedRepo,
 } from "./routes/github";
+import { handleGetAccounts } from "./routes/user";
 
 const app = express();
 const port = process.env.PORT ?? 5000;
@@ -27,6 +29,7 @@ app.use(
   }),
 );
 app.use("/api/auth", toNodeHandler(auth));
+app.get("/api/user/accounts", handleGetAccounts);
 
 app.use(express.json());
 
@@ -56,6 +59,10 @@ app.get("/api/github/repos/:owner/:repo", handleGetRepoDetail);
 app.get("/api/github/repos/:owner/:repo/commits", handleGetRepoCommits);
 app.get("/api/github/repos/:owner/:repo/commits/:sha", handleGetCommitDetail);
 app.get("/api/github/repos/:owner/:repo/pulls", handleGetRepoPulls);
+app.get(
+  "/api/github/repos/:owner/:repo/pulls/:pull_number/commits",
+  handleGetPullCommits,
+);
 app.get(
   "/api/github/repos/:owner/:repo/pulls/:pull_number",
   handleGetPullDetail,

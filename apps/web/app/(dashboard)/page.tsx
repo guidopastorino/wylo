@@ -106,14 +106,20 @@ export default function DashboardPage() {
   }
 
   if (error) {
+    const isGitHubNotConnected = error === "GitHub not connected";
     return (
-      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-        <p className="font-medium">{error}</p>
-        <p className="mt-1 text-sm">
-          {error === "GitHub not connected"
-            ? "Inicia sesión con GitHub para ver tus datos."
+      <div className="rounded-lg border border-border bg-card p-6">
+        <p className="font-medium text-foreground">{error}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isGitHubNotConnected
+            ? "Vincula tu cuenta de GitHub para ver repos, PRs y métricas."
             : "Intenta recargar la página."}
         </p>
+        {isGitHubNotConnected && (
+          <Button asChild className="mt-4">
+            <Link href="/settings">Conectar GitHub en Configuración</Link>
+          </Button>
+        )}
       </div>
     );
   }
