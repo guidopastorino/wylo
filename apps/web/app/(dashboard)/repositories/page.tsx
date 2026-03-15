@@ -1,6 +1,7 @@
 "use client";
 
 import { GitBranch, Loader2, Check, Lock, Plus, Search, Unlock } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,9 +203,13 @@ export default function RepositoriesPage() {
                     <GitBranch className="size-5 shrink-0 text-muted-foreground mt-0.5" />
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="min-w-0 truncate font-medium" title={repo.fullName}>
+                        <Link
+                          href={`/repositories/${repo.fullName}`}
+                          className="min-w-0 truncate font-medium hover:text-primary hover:underline"
+                          title={repo.fullName}
+                        >
                           {repo.fullName}
-                        </p>
+                        </Link>
                         {repo.private ? (
                           <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                             Privado

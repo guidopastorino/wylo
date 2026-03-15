@@ -281,3 +281,341 @@ export async function handleGetDashboard(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to fetch dashboard data" });
   }
 }
+
+export async function handleGetRepoDetail(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo } = req.params;
+  if (!owner || !repo) {
+    res.status(400).json({ error: "owner and repo params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const { data: repoData } = await octokit.rest.repos.get({ owner, repo });
+
+    res.json({
+      repo: {
+        id: repoData.id,
+        fullName: repoData.full_name,
+        name: repoData.name,
+        description: repoData.description,
+        private: repoData.private,
+        htmlUrl: repoData.html_url,
+        homepage: repoData.homepage,
+        language: repoData.language,
+        stargazersCount: repoData.stargazers_count,
+        forksCount: repoData.forks_count,
+        openIssuesCount: repoData.open_issues_count,
+        defaultBranch: repoData.default_branch,
+        createdAt: repoData.created_at,
+        updatedAt: repoData.updated_at,
+        pushedAt: repoData.pushed_at,
+        owner: {
+          login: repoData.owner.login,
+          avatarUrl: repoData.owner.avatar_url,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("Repo detail error:", err);
+    res.status(500).json({ error: "Failed to fetch repo details" });
+  }
+}
+
+export async function handleGetRepoCommits(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo } = req.params;
+  if (!owner || !repo) {
+    res.status(400).json({ error: "owner and repo params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const { data } = await octokit.rest.repos.listCommits({
+      owner,
+      repo,
+      per_page: 30,
+    });
+
+    type CommitItem = {
+      sha: string;
+      commit: { message: string; author: { name: string; date: string } | null };
+      author: { login: string; avatar_url: string } | null;
+      html_url: string;
+    };
+
+    const commits = (data as CommitItem[]).map((c) => ({
+      sha: c.sha,
+      message: c.commit.message,
+      authorName: c.commit.author?.name ?? null,
+      authorDate: c.commit.author?.date ?? null,
+      authorLogin: c.author?.login ?? null,
+      authorAvatarUrl: c.author?.avatar_url ?? null,
+      htmlUrl: c.html_url,
+    }));
+
+    res.json({ commits });
+  } catch (err) {
+    console.error("Repo commits error:", err);
+    res.status(500).json({ error: "Failed to fetch commits" });
+  }
+}
+
+export async function handleGetCommitDetail(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo, sha } = req.params;
+  if (!owner || !repo || !sha) {
+    res.status(400).json({ error: "owner, repo, and sha params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const { data } = await octokit.rest.repos.getCommit({ owner, repo, ref: sha });
+
+    const files = (data.files ?? []).map((f) => ({
+      filename: f.filename,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+      changes: f.changes,
+      patch: f.patch ?? null,
+      blobUrl: f.blob_url,
+      rawUrl: f.raw_url,
+    }));
+
+    res.json({
+      commit: {
+        sha: data.sha,
+        message: data.commit.message,
+        htmlUrl: data.html_url,
+        authorName: data.commit.author?.name ?? null,
+        authorEmail: data.commit.author?.email ?? null,
+        authorDate: data.commit.author?.date ?? null,
+        authorLogin: data.author?.login ?? null,
+        authorAvatarUrl: data.author?.avatar_url ?? null,
+        committerName: data.commit.committer?.name ?? null,
+        committerDate: data.commit.committer?.date ?? null,
+        stats: {
+          additions: data.stats?.additions ?? 0,
+          deletions: data.stats?.deletions ?? 0,
+          total: data.stats?.total ?? 0,
+        },
+        parents: data.parents.map((p) => ({ sha: p.sha, htmlUrl: p.html_url })),
+      },
+      files,
+    });
+  } catch (err) {
+    console.error("Commit detail error:", err);
+    res.status(500).json({ error: "Failed to fetch commit details" });
+  }
+}
+
+export async function handleGetRepoPulls(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo } = req.params;
+  if (!owner || !repo) {
+    res.status(400).json({ error: "owner and repo params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const state = (req.query.state as "open" | "closed" | "all") || "all";
+    const { data } = await octokit.rest.pulls.list({
+      owner,
+      repo,
+      state,
+      sort: "updated",
+      direction: "desc",
+      per_page: 30,
+    });
+
+    type PullItem = {
+      id: number;
+      number: number;
+      title: string;
+      state: string;
+      html_url: string;
+      user: { login: string; avatar_url: string } | null;
+      created_at: string;
+      updated_at: string;
+      merged_at: string | null;
+      draft: boolean;
+    };
+
+    const pulls = (data as PullItem[]).map((pr) => ({
+      id: pr.id,
+      number: pr.number,
+      title: pr.title,
+      state: pr.state,
+      htmlUrl: pr.html_url,
+      user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
+      createdAt: pr.created_at,
+      updatedAt: pr.updated_at,
+      mergedAt: pr.merged_at,
+      draft: pr.draft,
+    }));
+
+    res.json({ pulls });
+  } catch (err) {
+    console.error("Repo pulls error:", err);
+    res.status(500).json({ error: "Failed to fetch pull requests" });
+  }
+}
+
+export async function handleGetPullDetail(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo, pull_number } = req.params;
+  if (!owner || !repo || !pull_number) {
+    res.status(400).json({ error: "owner, repo, and pull_number params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const [prRes, filesRes] = await Promise.all([
+      octokit.rest.pulls.get({ owner, repo, pull_number: Number(pull_number) }),
+      octokit.rest.pulls.listFiles({ owner, repo, pull_number: Number(pull_number), per_page: 100 }),
+    ]);
+
+    const pr = prRes.data;
+    const files = filesRes.data.map((f) => ({
+      filename: f.filename,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+      changes: f.changes,
+      patch: f.patch ?? null,
+      blobUrl: f.blob_url,
+      rawUrl: f.raw_url,
+    }));
+
+    res.json({
+      pull: {
+        id: pr.id,
+        number: pr.number,
+        title: pr.title,
+        body: pr.body,
+        state: pr.state,
+        htmlUrl: pr.html_url,
+        diffUrl: pr.diff_url,
+        user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
+        createdAt: pr.created_at,
+        updatedAt: pr.updated_at,
+        mergedAt: pr.merged_at,
+        closedAt: pr.closed_at,
+        draft: pr.draft,
+        mergeable: pr.mergeable,
+        additions: pr.additions,
+        deletions: pr.deletions,
+        changedFiles: pr.changed_files,
+        commits: pr.commits,
+        head: { ref: pr.head.ref, sha: pr.head.sha },
+        base: { ref: pr.base.ref, sha: pr.base.sha },
+      },
+      files,
+    });
+  } catch (err) {
+    console.error("Pull detail error:", err);
+    res.status(500).json({ error: "Failed to fetch pull request details" });
+  }
+}
+
+export async function handleGetRepoContents(req: Request, res: Response) {
+  const session = await auth.api.getSession({ headers: requestHeaders(req) });
+  if (!session?.user?.id) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { owner, repo } = req.params;
+  const path = (req.query.path as string) || "";
+  if (!owner || !repo) {
+    res.status(400).json({ error: "owner and repo params required" });
+    return;
+  }
+  const token = await getGitHubAccessToken(db, session.user.id);
+  if (!token) {
+    res.status(403).json({ error: "GitHub not connected" });
+    return;
+  }
+  const octokit = createOctokit(token);
+  try {
+    const { data } = await octokit.rest.repos.getContent({ owner, repo, path });
+
+    if (Array.isArray(data)) {
+      type ContentItem = { name: string; path: string; type: string; size: number; sha: string; html_url: string };
+      const items = (data as ContentItem[]).map((item) => ({
+        name: item.name,
+        path: item.path,
+        type: item.type,
+        size: item.size,
+        sha: item.sha,
+        htmlUrl: item.html_url,
+      }));
+      res.json({ type: "dir", items });
+    } else {
+      const file = data as { name: string; path: string; type: string; size: number; sha: string; html_url: string; content?: string; encoding?: string };
+      let content: string | null = null;
+      if (file.content && file.encoding === "base64") {
+        content = Buffer.from(file.content, "base64").toString("utf-8");
+      }
+      res.json({
+        type: "file",
+        file: {
+          name: file.name,
+          path: file.path,
+          size: file.size,
+          sha: file.sha,
+          htmlUrl: file.html_url,
+          content,
+        },
+      });
+    }
+  } catch (err) {
+    console.error("Repo contents error:", err);
+    res.status(500).json({ error: "Failed to fetch contents" });
+  }
+}

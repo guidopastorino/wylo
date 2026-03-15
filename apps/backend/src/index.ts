@@ -4,9 +4,15 @@ import express from "express";
 import { auth } from "./lib/auth";
 import {
   handleDeleteConnectedRepo,
+  handleGetCommitDetail,
   handleGetConnectedRepos,
   handleGetDashboard,
+  handleGetPullDetail,
   handleGetPulls,
+  handleGetRepoCommits,
+  handleGetRepoContents,
+  handleGetRepoDetail,
+  handleGetRepoPulls,
   handleGetRepos,
   handlePostConnectedRepo,
 } from "./routes/github";
@@ -45,6 +51,13 @@ app.get("/api/github/dashboard", handleGetDashboard);
 app.get("/api/github/connected-repos", handleGetConnectedRepos);
 app.post("/api/github/connected-repos", handlePostConnectedRepo);
 app.delete("/api/github/connected-repos", handleDeleteConnectedRepo);
+
+app.get("/api/github/repos/:owner/:repo", handleGetRepoDetail);
+app.get("/api/github/repos/:owner/:repo/commits", handleGetRepoCommits);
+app.get("/api/github/repos/:owner/:repo/commits/:sha", handleGetCommitDetail);
+app.get("/api/github/repos/:owner/:repo/pulls", handleGetRepoPulls);
+app.get("/api/github/repos/:owner/:repo/pulls/:pull_number", handleGetPullDetail);
+app.get("/api/github/repos/:owner/:repo/contents", handleGetRepoContents);
 
 app.listen(port, () => {
   console.log(`Backend (TS) listening on http://localhost:${port}`);
