@@ -1,8 +1,10 @@
 "use client";
 
-import { GitBranch, Loader2, Check, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { GitBranch, Loader2, Check, Lock, Plus, Search, Unlock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type Repo = {
   id: number;
@@ -13,12 +15,16 @@ type Repo = {
   updatedAt: string | null;
 };
 
+type VisibilityFilter = "all" | "public" | "private";
+
 export default function RepositoriesPage() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [connectedRepos, setConnectedRepos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
 
   const fetchRepos = () =>
     fetch("/api/github/repos", { credentials: "include" })
@@ -42,6 +48,21 @@ export default function RepositoriesPage() {
     Promise.all([fetchRepos(), fetchConnected()])
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredRepos = useMemo(() => {
+    let list = repos;
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (r) =>
+          r.fullName.toLowerCase().includes(q) ||
+          (r.description?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    if (visibilityFilter === "public") list = list.filter((r) => !r.private);
+    if (visibilityFilter === "private") list = list.filter((r) => r.private);
+    return list;
+  }, [repos, searchQuery, visibilityFilter]);
 
   const toggleConnected = async (repoFullName: string) => {
     const isConnected = connectedRepos.includes(repoFullName);
@@ -95,10 +116,68 @@ export default function RepositoriesPage() {
         </p>
       </div>
 
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar por nombre o descripción..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter("all")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              visibilityFilter === "all"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Todos
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter("public")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              visibilityFilter === "public"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Unlock className="size-3.5" />
+            Públicos
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibilityFilter("private")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              visibilityFilter === "private"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Lock className="size-3.5" />
+            Privados
+          </button>
+        </div>
+      </div>
+
       <div className="rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <p className="text-sm font-medium text-muted-foreground">
             {connectedRepos.length} de {repos.length} conectados
+            {filteredRepos.length !== repos.length && (
+              <span className="ml-1">
+                · mostrando {filteredRepos.length}
+              </span>
+            )}
           </p>
         </div>
         <ul className="divide-y divide-border">
@@ -106,36 +185,45 @@ export default function RepositoriesPage() {
             <li className="px-4 py-8 text-center text-sm text-muted-foreground">
               No se encontraron repos. Verificá que tu cuenta de GitHub tenga acceso a repos.
             </li>
+          ) : filteredRepos.length === 0 ? (
+            <li className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Ningún repo coincide con la búsqueda o el filtro. Probá otros términos o mostrá todos.
+            </li>
           ) : (
-            repos.map((repo) => {
+            filteredRepos.map((repo) => {
               const isConnected = connectedRepos.includes(repo.fullName);
               const busy = toggling === repo.fullName;
               return (
                 <li
                   key={repo.id}
-                  className="flex items-center justify-between gap-4 px-4 py-3"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <GitBranch className="size-5 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="font-medium">{repo.fullName}</p>
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <GitBranch className="size-5 shrink-0 text-muted-foreground mt-0.5" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="min-w-0 truncate font-medium" title={repo.fullName}>
+                          {repo.fullName}
+                        </p>
+                        {repo.private ? (
+                          <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            Privado
+                          </span>
+                        ) : null}
+                      </div>
                       {repo.description ? (
-                        <p className="truncate text-sm text-muted-foreground">
+                        <p className="line-clamp-2 text-sm text-muted-foreground sm:line-clamp-1">
                           {repo.description}
                         </p>
                       ) : null}
                     </div>
-                    {repo.private ? (
-                      <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        Privado
-                      </span>
-                    ) : null}
                   </div>
                   <Button
                     size="sm"
                     variant={isConnected ? "secondary" : "default"}
                     onClick={() => toggleConnected(repo.fullName)}
                     disabled={busy}
+                    className="w-full shrink-0 sm:w-auto"
                   >
                     {busy ? (
                       <Loader2 className="size-4 animate-spin" />

@@ -175,13 +175,33 @@ export async function handleGetDashboard(req: Request, res: Response) {
         ? `type:pr state:open author:${login} ${repoQuery}`
         : `type:pr state:open author:${login}`;
 
-    const [reposRes, myPullsRes] = await Promise.all([
+    const reviewsPendingQ =
+      repoQuery.length > 0
+        ? `type:pr state:open review-requested:${login} ${repoQuery}`
+        : `type:pr state:open review-requested:${login}`;
+
+    const mergedQ =
+      repoQuery.length > 0
+        ? `type:pr is:merged author:${login} ${repoQuery}`
+        : `type:pr is:merged author:${login}`;
+
+    const [reposRes, myPullsRes, reviewsPendingRes, mergedRes] = await Promise.all([
       octokit.rest.repos.listForAuthenticatedUser({
         sort: "updated",
         per_page: 100,
       }),
       octokit.rest.search.issuesAndPullRequests({
         q: searchQ,
+        sort: "updated",
+        per_page: 30,
+      }),
+      octokit.rest.search.issuesAndPullRequests({
+        q: reviewsPendingQ,
+        sort: "updated",
+        per_page: 20,
+      }),
+      octokit.rest.search.issuesAndPullRequests({
+        q: mergedQ,
         sort: "updated",
         per_page: 30,
       }),
@@ -224,12 +244,35 @@ export async function handleGetDashboard(req: Request, res: Response) {
       htmlUrl: pr.htmlUrl,
     }));
 
+    type MergedItem = { created_at: string; closed_at: string | null };
+    const mergedItems = mergedRes.data.items as MergedItem[];
+    const mergeTimes = mergedItems
+      .filter((m) => m.closed_at)
+      .map((m) => (new Date(m.closed_at!).getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60));
+    const avgTimeToMergeHours = mergeTimes.length > 0
+      ? Math.round((mergeTimes.reduce((a, b) => a + b, 0) / mergeTimes.length) * 10) / 10
+      : null;
+
+    type ReviewPrItem = { id: number; number: number; title: string; html_url: string; user: { login: string; avatar_url: string } | null; updated_at: string; repository_url: string };
+    const reviewsPending = (reviewsPendingRes.data.items as ReviewPrItem[]).map((pr) => ({
+      id: pr.id,
+      number: pr.number,
+      title: pr.title,
+      htmlUrl: pr.html_url,
+      user: pr.user ? { login: pr.user.login, avatarUrl: pr.user.avatar_url } : null,
+      updatedAt: pr.updated_at,
+      repoFullName: pr.repository_url.split("/").slice(-2).join("/"),
+    }));
+
     res.json({
       repos,
       connectedRepos,
       pulls: myPulls,
+      reviewsPending,
       metrics: {
         myOpenPulls: myPulls.length,
+        reviewsPendingCount: reviewsPending.length,
+        avgTimeToMergeHours,
       },
       activity,
     });

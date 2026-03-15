@@ -2,7 +2,6 @@
 
 import {
   CheckCircle2,
-  Flag,
   GitPullRequest,
   Loader2,
   TrendingDown,
@@ -25,7 +24,20 @@ type DashboardData = {
     updatedAt: string;
     repoFullName: string;
   }[];
-  metrics: { myOpenPulls: number };
+  reviewsPending?: {
+    id: number;
+    number: number;
+    title: string;
+    htmlUrl: string;
+    user: { login: string; avatarUrl: string } | null;
+    updatedAt: string;
+    repoFullName: string;
+  }[];
+  metrics: {
+    myOpenPulls: number;
+    reviewsPendingCount?: number;
+    avgTimeToMergeHours?: number | null;
+  };
   activity: {
     type: string;
     title: string;
@@ -37,33 +49,6 @@ type DashboardData = {
     htmlUrl: string;
   }[];
 };
-
-const criticalHighlights = [
-  {
-    title: "Large PR (52 files)",
-    detail: "#1260 - Refactor Core Engine",
-    badge: "COMPLEX",
-    variant: "destructive",
-  },
-  {
-    title: "Critical Issue #45",
-    detail: "Security: SQL Injection vulnerability in search",
-    badge: "OVERDUE",
-    variant: "warning",
-  },
-  {
-    title: "Blocked PRs",
-    detail: "3 PRs are currently blocked by dependencies",
-    badge: "WAITING",
-    variant: "muted",
-  },
-];
-
-const healthMetrics = [
-  { label: "Test Coverage", value: 82, color: "bg-emerald-500" },
-  { label: "Build Stability", value: 98.4, color: "bg-emerald-500" },
-  { label: "Documentation", value: 64, color: "bg-amber-500" },
-];
 
 function formatTimeAgo(iso: string) {
   const d = new Date(iso);
@@ -137,9 +122,10 @@ export default function DashboardPage() {
     );
   }
 
-  const metrics = data?.metrics ?? { myOpenPulls: 0 };
+  const metrics = data?.metrics ?? { myOpenPulls: 0, reviewsPendingCount: 0, avgTimeToMergeHours: null };
   const activity = data?.activity ?? [];
   const pulls = data?.pulls ?? [];
+  const reviewsPending = data?.reviewsPending ?? [];
   const connectedRepos = data?.connectedRepos ?? [];
 
   return (
@@ -160,9 +146,15 @@ export default function DashboardPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Avg. time to merge
           </p>
-          <p className="mt-1 text-2xl font-semibold">—</p>
+          <p className="mt-1 text-2xl font-semibold">
+            {metrics.avgTimeToMergeHours != null
+              ? `${metrics.avgTimeToMergeHours}h`
+              : "—"}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Próximamente
+            {metrics.avgTimeToMergeHours != null
+              ? "Tus PRs mergeados"
+              : "Sin datos aún"}
           </p>
         </div>
         <div className="relative rounded-lg border border-border bg-card p-4">
@@ -178,11 +170,13 @@ export default function DashboardPage() {
         <div className="relative rounded-lg border border-border bg-card p-4">
           <CheckCircle2 className="absolute right-3 top-3 size-4 text-violet-500" />
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Issues cerradas hoy
+            Reviews pendientes
           </p>
-          <p className="mt-1 text-2xl font-semibold">—</p>
+          <p className="mt-1 text-2xl font-semibold">
+            {metrics.reviewsPendingCount ?? 0}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Próximamente
+            PRs donde te asignaron
           </p>
         </div>
       </div>
@@ -256,67 +250,58 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right - Critical Highlights + Repo Health */}
-        <div className="space-y-6">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <Flag className="size-4 text-destructive" />
-              Critical Highlights
-            </h2>
-            <ul className="mt-3 space-y-3">
-              {criticalHighlights.map((h) => (
-                <li
-                  key={h.title}
-                  className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/30 p-3"
-                >
-                  <span
-                    className={cn(
-                      "mt-1.5 size-2 shrink-0 rounded-full",
-                      h.variant === "destructive" && "bg-destructive",
-                      h.variant === "warning" && "bg-amber-500",
-                      h.variant === "muted" && "bg-muted-foreground",
-                    )}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{h.title}</p>
-                    <p className="text-xs text-muted-foreground">{h.detail}</p>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold uppercase",
-                      h.variant === "destructive" &&
-                        "bg-destructive/20 text-destructive",
-                      h.variant === "warning" &&
-                        "bg-amber-500/20 text-amber-600 dark:text-amber-400",
-                      h.variant === "muted" && "bg-muted text-muted-foreground",
-                    )}
+        {/* Right - Reviews pendientes */}
+        <div className="rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold">Reviews pendientes</h2>
+            <a
+              href="https://github.com/pulls/review-requested"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Ver en GitHub
+            </a>
+          </div>
+          <ul className="divide-y divide-border">
+            {reviewsPending.length === 0 ? (
+              <li className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No hay PRs pendientes de tu review.
+              </li>
+            ) : (
+              reviewsPending.slice(0, 5).map((pr) => (
+                <li key={pr.id} className="px-4 py-3">
+                  <a
+                    href={pr.htmlUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:opacity-80"
                   >
-                    {h.badge}
-                  </span>
+                    <p className="text-sm font-medium">{pr.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      #{pr.number} · {pr.repoFullName}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground/80">
+                      {pr.user?.login ?? "—"} · {formatTimeAgo(pr.updatedAt)}
+                    </p>
+                  </a>
                 </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h2 className="text-sm font-semibold">Repo Health Index</h2>
-            <ul className="mt-4 space-y-4">
-              {healthMetrics.map((m) => (
-                <li key={m.label}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{m.label}</span>
-                    <span className="font-medium">{m.value}%</span>
-                  </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={cn("h-full rounded-full", m.color)}
-                      style={{ width: `${m.value}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+              ))
+            )}
+          </ul>
+          {reviewsPending.length > 5 && (
+            <div className="border-t border-border p-3">
+              <Button variant="ghost" size="sm" className="w-full" asChild>
+                <a
+                  href="https://github.com/pulls/review-requested"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver todos ({reviewsPending.length})
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
